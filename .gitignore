@@ -1,0 +1,48 @@
+# Node
+node_modules/
+dist/
+dist-ts/
+dist-ts-node/
+*.tsbuildinfo
+build/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Android / Gradle
+apps/tv/.gradle/
+apps/tv/build/
+apps/tv/app/build/
+apps/tv/local.properties
+apps/tv/.idea/
+apps/tv/captures/
+apps/tv/*.iml
+apps/tv/.cxx/
+*.apk
+*.aab
+
+# Android signing - NEVER commit
+*.jks
+*.keystore
+apps/tv/keystore.properties
+
+# IDE
+.vscode/
+.idea/
+
+# Claude project-local scratch
+.claude/

@@ -1,0 +1,26 @@
+{
+  "name": "bump-run",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BUMP RUN - original Jackbox-style multiplayer race-and-bump board game for Fire TV / Android TV with phone controllers",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@12.9.1",
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter \"./apps/**\" run dev",
+    "dev:lan": "node scripts/dev-lan.mjs",
+    "build": "pnpm -r --filter \"./packages/**\" run build && pnpm -r --filter \"./apps/server\" run build && pnpm -r --filter \"./apps/controller\" run build",
+    "build:controller": "pnpm --filter ./apps/controller run build",
+    "build:server": "pnpm --filter ./apps/server run build",
+    "build:tv": "cd apps/tv && ./gradlew.bat assembleDebug",
+    "apk:debug": "cd apps/tv && ./gradlew.bat assembleDebug",
+    "apk:release": "cd apps/tv && ./gradlew.bat assembleRelease",
+    "test": "pnpm -r --filter \"./packages/**\" run test && pnpm --filter ./apps/server run test",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
