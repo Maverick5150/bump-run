@@ -1,0 +1,13 @@
+{
+  "name": "BUMP RUN",
+  "short_name": "BUMP RUN",
+  "description": "Race. Bump. Win. The phone controller for BUMP RUN.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14121f",
+  "theme_color": "#14121f",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

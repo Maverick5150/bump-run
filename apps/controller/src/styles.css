@@ -1,0 +1,281 @@
+:root {
+  --bg: #14121f;
+  --bg-elevated: #1e1b2e;
+  --bg-card: #262240;
+  --text: #f4f2ff;
+  --text-dim: #a9a3c4;
+  --accent: #ff5a3c;
+  --accent-2: #2de0c8;
+  --danger: #ff4d6d;
+  --radius: 18px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 50% -10%, #2a2448 0%, var(--bg) 60%);
+  color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+.screen {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  gap: 18px;
+}
+
+.logo {
+  font-weight: 900;
+  font-size: 2.2rem;
+  letter-spacing: 2px;
+  text-align: center;
+  line-height: 1;
+}
+.logo .accent {
+  color: var(--accent);
+}
+
+.tagline {
+  color: var(--text-dim);
+  font-size: 0.95rem;
+  text-align: center;
+  margin-top: -10px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+input[type="text"] {
+  width: 100%;
+  font-size: 1.1rem;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 2px solid #3a3458;
+  background: var(--bg-elevated);
+  color: var(--text);
+  outline: none;
+}
+input[type="text"]:focus {
+  border-color: var(--accent-2);
+}
+
+button {
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border: none;
+  border-radius: 14px;
+  padding: 16px 20px;
+  cursor: pointer;
+  color: var(--text);
+  background: #3a3458;
+  min-height: 52px;
+  touch-action: manipulation;
+}
+button:active {
+  transform: scale(0.97);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #ff8a5c);
+  color: #1a0f0a;
+  width: 100%;
+}
+
+.btn-secondary {
+  background: var(--bg-elevated);
+  border: 2px solid #3a3458;
+  width: 100%;
+}
+
+.btn-draw {
+  width: 100%;
+  padding: 28px;
+  font-size: 1.6rem;
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--accent-2), #58f0da);
+  color: #052b26;
+}
+
+.room-code {
+  font-size: 2rem;
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-align: center;
+  padding: 10px 0;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.seat-tile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 3px solid transparent;
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: #0b0a14;
+}
+.seat-tile.selected {
+  border-color: white;
+}
+.seat-tile.taken {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.seat-glyph {
+  font-size: 1.3rem;
+}
+
+.player-list {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.player-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+.player-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.player-name {
+  flex: 1;
+  font-weight: 600;
+}
+.player-ready {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+.player-waiting {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.status-banner {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  padding: 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  color: var(--text-dim);
+}
+.status-banner.active {
+  background: rgba(45, 224, 200, 0.15);
+  color: var(--accent-2);
+}
+
+.card-display {
+  width: 160px;
+  height: 220px;
+  border-radius: 20px;
+  background: linear-gradient(160deg, var(--bg-card), var(--bg-elevated));
+  border: 3px solid var(--accent-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  font-weight: 900;
+  box-shadow: 0 10px 30px rgba(45, 224, 200, 0.25);
+}
+.card-blurb {
+  text-align: center;
+  color: var(--text-dim);
+  max-width: 320px;
+}
+
+.move-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+}
+.move-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 2px solid #3a3458;
+  text-align: left;
+}
+.move-option .pawn-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+}
+
+.winner-title {
+  font-size: 2.4rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.disconnected-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--danger);
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-weight: 700;
+  z-index: 100;
+}
+
+.link-button {
+  background: none;
+  color: var(--text-dim);
+  text-decoration: underline;
+  font-weight: 500;
+  min-height: auto;
+  padding: 6px;
+}
