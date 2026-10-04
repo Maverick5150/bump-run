@@ -1,18 +1,18 @@
 # Fly.io app configuration for the BUMP RUN realtime server.
 # Builds from the repo-root Dockerfile. See docs/deployment.md.
-app = "bump-run-server"
-primary_region = "iad"
+#
+# NOTE: app name is "bump-run" (not "bump-run-server") because Fly's
+# "Launch an App from GitHub" flow names the app after the repo and that
+# can't be changed after the fact without deleting and recreating the app.
+app = "bump-run"
+primary_region = "ams"
 
 [build]
 
 [env]
   NODE_ENV = "production"
   PORT = "3000"
-  # Must match the real deployed hostname Fly.io assigns. If the app name
-  # above gets changed during setup (e.g. because "bump-run-server" is
-  # already taken), update this to match before players rely on it --
-  # QR codes and join links are built from this value.
-  PUBLIC_BASE_URL = "https://bump-run-server.fly.dev"
+  PUBLIC_BASE_URL = "https://bump-run.fly.dev"
 
 [http_service]
   internal_port = 3000
