@@ -3,6 +3,7 @@ package com.bumprun.tv
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Box
@@ -63,17 +64,28 @@ private fun AppRoot(vm: AppViewModel) {
                 onHowToPlay = { vm.goTo(Screen.HOW_TO_PLAY) },
                 onSettings = { vm.goTo(Screen.SETTINGS) },
             )
-            Screen.HOW_TO_PLAY -> HowToPlayScreen(onBack = { vm.goTo(Screen.TITLE) })
-            Screen.SETTINGS -> SettingsScreen(settings = vm.settings, onBack = { vm.goTo(Screen.TITLE) })
-            Screen.LOBBY -> LobbyScreen(
-                serverUrl = vm.settings.serverUrl,
-                roomState = roomState,
-                onStart = { vm.startGameFromLobby() },
-            )
+            Screen.HOW_TO_PLAY -> {
+                BackHandler { vm.goTo(Screen.TITLE) }
+                HowToPlayScreen(onBack = { vm.goTo(Screen.TITLE) })
+            }
+            Screen.SETTINGS -> {
+                BackHandler { vm.goTo(Screen.TITLE) }
+                SettingsScreen(settings = vm.settings, onBack = { vm.goTo(Screen.TITLE) })
+            }
+            Screen.LOBBY -> {
+                BackHandler { vm.returnToMainMenu() }
+                LobbyScreen(
+                    serverUrl = vm.settings.serverUrl,
+                    status = status,
+                    roomState = roomState,
+                    onStart = { vm.startGameFromLobby() },
+                )
+            }
             Screen.GAME -> gameState?.let {
                 GameScreen(gameState = it, roomCode = roomState?.room?.roomCode ?: "----", reducedMotion = vm.settings.reducedMotion)
             }
             Screen.WIN -> {
+                BackHandler { vm.returnToMainMenu() }
                 val winnerSeat = gameState?.winnerSeat
                 val winnerName = gameState?.players?.firstOrNull { it.seat == winnerSeat }?.nickname
                 WinScreen(
@@ -87,7 +99,7 @@ private fun AppRoot(vm: AppViewModel) {
         }
 
         if (status == ConnectionStatus.CONNECTING || status == ConnectionStatus.DISCONNECTED) {
-            if (screen != Screen.TITLE && screen != Screen.HOW_TO_PLAY && screen != Screen.SETTINGS) {
+            if (screen != Screen.TITLE && screen != Screen.HOW_TO_PLAY && screen != Screen.SETTINGS && screen != Screen.LOBBY) {
                 Surface(
                     modifier = Modifier.align(Alignment.BottomStart).padding(16.dp),
                     color = androidx.compose.ui.graphics.Color(0x99000000),

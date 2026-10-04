@@ -29,8 +29,14 @@ android {
 
     buildTypes {
         debug {
-            // Local LAN dev server; override per-machine via adb or the in-app Settings screen.
-            buildConfigField("String", "DEFAULT_SERVER_URL", "\"http://192.168.1.50:3000\"")
+            // Deliberately empty: a plausible-looking fake default (e.g. a
+            // hardcoded LAN IP) silently matches or mismatches whatever
+            // network you're actually on, which is confusing to debug. Empty
+            // means Settings shows it as an unmistakable example/placeholder
+            // instead of looking like a real saved value. Set per-machine via
+            // the in-app Settings screen, matching what `pnpm run dev:lan`
+            // prints.
+            buildConfigField("String", "DEFAULT_SERVER_URL", "\"\"")
             buildConfigField("boolean", "DEBUG_MENU_ENABLED", "true")
         }
         release {

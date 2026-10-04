@@ -32,6 +32,13 @@ class SocketManager {
     private var hostToken: String? = null
 
     fun connect(url: String) {
+        if (url.isBlank()) {
+            // Nothing configured yet (e.g. fresh install) -- surface this as
+            // "disconnected" rather than attempting a connection to "".
+            disconnect()
+            serverUrl = url
+            return
+        }
         if (socket != null && serverUrl == url) return
         disconnect()
         serverUrl = url
@@ -42,7 +49,13 @@ class SocketManager {
             reconnectionDelayMax = 4000
             transports = arrayOf("websocket")
         }
-        val s = IO.socket(url, opts)
+        val s = try {
+            IO.socket(url, opts)
+        } catch (e: Exception) {
+            // Malformed URL typed into Settings -- don't crash the app.
+            status.value = ConnectionStatus.DISCONNECTED
+            return
+        }
         socket = s
 
         s.on(Socket.EVENT_CONNECT) {

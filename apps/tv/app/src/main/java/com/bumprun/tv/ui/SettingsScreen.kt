@@ -56,6 +56,6 @@ fun SettingsScreen(settings: Settings, onBack: () -> Unit) {
         }
 
         Spacer(Modifier.weight(1f))
-        Button(onClick = onBack) { Text("BACK") }
+        TvButton(text = "BACK", onClick = onBack)
     }
 }
