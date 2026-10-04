@@ -23,18 +23,16 @@ jobs:
 
       # See ci.yml for why this installs packages directly instead of using
       # the android-actions/setup-android marketplace action.
-      - name: Install required SDK packages
+      - name: Install Android SDK command-line tools
         run: |
-          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
-          echo "Using SDK root: $SDK_ROOT"
-          SDKMANAGER=$(command -v sdkmanager || find "$SDK_ROOT/cmdline-tools" -maxdepth 2 -name sdkmanager -type f 2>/dev/null | sort -r | head -1)
-          if [ -z "$SDKMANAGER" ]; then
-            echo "::error::Could not locate sdkmanager under $SDK_ROOT/cmdline-tools"
-            exit 1
-          fi
-          echo "Using sdkmanager at: $SDKMANAGER"
-          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses > /dev/null || true
-          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+          set -e
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -sSL -o /tmp/cmdline-tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip"
+          unzip -q /tmp/cmdline-tools.zip -d "$SDK_ROOT/cmdline-tools"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses > /dev/null
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install "platform-tools" "platforms;android-34" "build-tools;34.0.0"
           echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
 
