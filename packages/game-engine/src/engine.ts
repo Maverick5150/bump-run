@@ -1,5 +1,4 @@
 import type {
-  CardType,
   GameEvent,
   GameState,
   MoveOption,
@@ -13,7 +12,7 @@ import { entryGlobalPos, HOME_LOCAL, locationToLocal, localToLocation, sameLocat
 import { drawCard, shuffledDeck } from "./deck.js";
 import { seedFromString } from "./rng.js";
 
-const { MAIN_TRACK_LENGTH, SAFE_ZONE_LENGTH, PAWNS_PER_PLAYER } = GAME_RULES;
+const { MAIN_TRACK_LENGTH, PAWNS_PER_PLAYER } = GAME_RULES;
 
 // ---------------------------------------------------------------------------
 // Construction
@@ -187,7 +186,7 @@ function simulateForward(state: GameState, pawnId: string, distance: number): Mo
   if (distance <= 0) return null;
   const found = findPawnOwner(state, pawnId);
   if (!found) return null;
-  const { player, pawn } = found;
+  const { pawn } = found;
   if (pawn.location.zone === "start" || pawn.location.zone === "home") return null;
 
   const local = locationToLocal(pawn.location, pawn.ownerSeat, ENTRY_OFFSET);
@@ -626,7 +625,7 @@ export function hasWinner(state: GameState): SeatColor | null {
 // ---------------------------------------------------------------------------
 
 export function serializePublicState(state: GameState): PublicGameState {
-  const { deck, rngState, ...rest } = state;
+  const { deck, rngState: _rngState, ...rest } = state;
   return { ...rest, deckCount: deck.length };
 }
 

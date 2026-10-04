@@ -14,7 +14,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "echo \"(no-op lint for shared-types)\""
+    "lint": "eslint ."
   },
   "devDependencies": {
     "typescript": "^5.6.3"

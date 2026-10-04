@@ -39,9 +39,9 @@ export interface PlayerReadyPayload {
   ready: boolean;
 }
 
-export interface GameStartPayload {}
+export type GameStartPayload = Record<string, never>;
 
-export interface TurnDrawPayload {}
+export type TurnDrawPayload = Record<string, never>;
 
 /**
  * All turn decisions -- plain move, split, swap, and BUMP! -- travel through
@@ -53,7 +53,7 @@ export interface TurnChooseMovePayload {
   move: MoveOption;
 }
 
-export interface GamePlayAgainPayload {}
+export type GamePlayAgainPayload = Record<string, never>;
 
 export interface ClientToServerEvents {
   "room:create": (

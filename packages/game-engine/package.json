@@ -16,7 +16,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "echo \"(no-op lint for game-engine)\""
+    "lint": "eslint ."
   },
   "dependencies": {
     "@bump-run/shared-types": "workspace:*"

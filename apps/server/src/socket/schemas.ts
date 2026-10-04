@@ -44,6 +44,7 @@ export const turnChooseMoveSchema = z.object({
   move: moveOptionSchema,
 });
 
+// eslint-disable-next-line no-control-regex -- intentionally stripping control characters
 const CONTROL_CHARS = new RegExp("[\\u0000-\\u001F\\u007F]", "g");
 
 /**
