@@ -1,0 +1,35 @@
+# Fly.io app configuration for the BUMP RUN realtime server.
+# Builds from the repo-root Dockerfile. See docs/deployment.md.
+app = "bump-run-server"
+primary_region = "iad"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  # Must match the real deployed hostname Fly.io assigns. If the app name
+  # above gets changed during setup (e.g. because "bump-run-server" is
+  # already taken), update this to match before players rely on it --
+  # QR codes and join links are built from this value.
+  PUBLIC_BASE_URL = "https://bump-run-server.fly.dev"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
