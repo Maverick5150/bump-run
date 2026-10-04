@@ -1,0 +1,11 @@
+services:
+  server:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:3000}
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    restart: unless-stopped
