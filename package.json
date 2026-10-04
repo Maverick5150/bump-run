@@ -10,15 +10,16 @@
   "scripts": {
     "dev": "pnpm -r --parallel --filter \"./apps/**\" run dev",
     "dev:lan": "node scripts/dev-lan.mjs",
-    "build": "pnpm -r --filter \"./packages/**\" run build && pnpm -r --filter \"./apps/server\" run build && pnpm -r --filter \"./apps/controller\" run build",
-    "build:controller": "pnpm --filter ./apps/controller run build",
-    "build:server": "pnpm --filter ./apps/server run build",
+    "build:core": "pnpm -r --filter \"./packages/**\" run build",
+    "build": "pnpm run build:core && pnpm -r --filter \"./apps/server\" run build && pnpm -r --filter \"./apps/controller\" run build",
+    "build:controller": "pnpm run build:core && pnpm --filter ./apps/controller run build",
+    "build:server": "pnpm run build:core && pnpm --filter ./apps/server run build",
     "build:tv": "cd apps/tv && ./gradlew.bat assembleDebug",
     "apk:debug": "cd apps/tv && ./gradlew.bat assembleDebug",
     "apk:release": "cd apps/tv && ./gradlew.bat assembleRelease",
-    "test": "pnpm -r --filter \"./packages/**\" run test && pnpm --filter ./apps/server run test",
+    "test": "pnpm run build:core && pnpm -r --filter \"./packages/**\" run test && pnpm --filter ./apps/server run test",
     "lint": "eslint .",
-    "typecheck": "pnpm -r run typecheck"
+    "typecheck": "pnpm run build:core && pnpm -r run typecheck"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
