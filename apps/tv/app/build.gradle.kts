@@ -29,14 +29,13 @@ android {
 
     buildTypes {
         debug {
-            // Deliberately empty: a plausible-looking fake default (e.g. a
-            // hardcoded LAN IP) silently matches or mismatches whatever
-            // network you're actually on, which is confusing to debug. Empty
-            // means Settings shows it as an unmistakable example/placeholder
-            // instead of looking like a real saved value. Set per-machine via
-            // the in-app Settings screen, matching what `pnpm run dev:lan`
-            // prints.
-            buildConfigField("String", "DEFAULT_SERVER_URL", "\"\"")
+            // Points at the real public deployment (apps/server deployed to
+            // Fly.io, see docs/deployment.md) so the APK works immediately
+            // on anyone's Fire Stick with zero setup -- this is what actually
+            // gets distributed via the Downloader code. Override per-machine
+            // in Settings if you want to point at a local LAN dev server
+            // instead (matching what `pnpm run dev:lan` prints).
+            buildConfigField("String", "DEFAULT_SERVER_URL", "\"https://bump-run.fly.dev\"")
             buildConfigField("boolean", "DEBUG_MENU_ENABLED", "true")
         }
         release {

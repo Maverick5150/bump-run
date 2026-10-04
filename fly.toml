@@ -19,7 +19,11 @@ primary_region = "ams"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  # Keep one machine warm at all times -- this app is distributed to other
+  # people's Fire Sticks who have no way to know a cold start is happening,
+  # so avoid the scale-to-zero wake-up delay entirely rather than risk
+  # another "QR code doesn't work" confusion.
+  min_machines_running = 1
   processes = ["app"]
 
   [[http_service.checks]]
