@@ -1,0 +1,17 @@
+# Keeps the build context small and avoids uploading pnpm's symlinked
+# node_modules (which has tripped a Windows-host tar bug during remote
+# Depot builds: "archive/tar: unknown file mode"). The Dockerfile runs its
+# own `pnpm install` inside the build, so none of this needs to travel.
+node_modules
+**/node_modules
+.git
+**/dist
+**/build
+**/.turbo
+
+# The Android TV app is a separate build (Gradle/Kotlin), never part of
+# the server image, and is large (Gradle caches, APK outputs).
+apps/tv
+
+**/*.log
+.DS_Store
