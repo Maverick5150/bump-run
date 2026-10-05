@@ -20,7 +20,21 @@ import {
 import { SERVER_CONFIG } from "../config.js";
 import { logger } from "../logger.js";
 import type { IRoomStore, ServerPlayer, ServerRoom } from "../rooms/RoomStore.js";
+import { chooseBotMove } from "./bot.js";
 import { sanitizeNickname } from "./schemas.js";
+
+const BOT_TURN_DELAY_MS = 900;
+const BOT_MOVE_DELAY_MS = 700;
+const BOT_NICKNAMES: Record<SeatColor, string> = {
+  red: "AI Red",
+  blue: "AI Blue",
+  green: "AI Green",
+  yellow: "AI Yellow",
+};
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 type IOServer = Server<ClientToServerEvents, ServerToClientEvents>;
 type IOSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -199,31 +213,46 @@ export class RoomService {
     this.broadcastRoomState(room);
   }
 
-  startGame(socket: IOSocket): void {
+  startGame(socket: IOSocket, requestedBotSeats: SeatColor[] = []): void {
     const ctx = this.contexts.get(socket.id);
     if (!ctx || ctx.role !== "host") throw new RoomApiError("NOT_HOST", "Only the TV can start the game.");
     const room = this.store.getById(ctx.roomId);
     if (!room) throw new RoomApiError("ROOM_NOT_FOUND", "That room no longer exists.");
 
     const readyPlayers = room.players.filter((p) => p.ready && p.seat);
-    if (readyPlayers.length < room.settings.minPlayers) {
-      throw new RoomApiError("NOT_ENOUGH_PLAYERS", `Need at least ${room.settings.minPlayers} ready players.`);
+    const humanSeats = new Set(readyPlayers.map((p) => p.seat));
+    // Defensive: never let a bot claim a seat a human already occupies, even
+    // if the TV's request was built from a slightly stale snapshot.
+    const botSeats = [...new Set(requestedBotSeats)].filter((seat) => !humanSeats.has(seat));
+
+    if (readyPlayers.length + botSeats.length < room.settings.minPlayers) {
+      throw new RoomApiError("NOT_ENOUGH_PLAYERS", `Need at least ${room.settings.minPlayers} players (human or AI).`);
+    }
+    if (readyPlayers.length === 0) {
+      throw new RoomApiError("NOT_ENOUGH_PLAYERS", "At least one human player is needed to start.");
     }
 
-    const orderedBySeat = SEAT_COLORS.map((seat) => readyPlayers.find((p) => p.seat === seat)).filter(
-      (p): p is ServerPlayer => Boolean(p),
-    );
+    type Spec = { playerId: string; seat: SeatColor; nickname: string; isBot: boolean };
+    const orderedBySeat: Spec[] = SEAT_COLORS.map((seat): Spec | null => {
+      const human = readyPlayers.find((p) => p.seat === seat);
+      if (human) return { playerId: human.playerId, seat, nickname: human.nickname, isBot: false };
+      if (botSeats.includes(seat)) return { playerId: `bot-${seat}`, seat, nickname: BOT_NICKNAMES[seat], isBot: true };
+      return null;
+    }).filter((spec): spec is Spec => spec !== null);
 
-    room.game = createGame(
-      orderedBySeat.map((p) => ({ playerId: p.playerId, seat: p.seat!, nickname: p.nickname })),
-    );
+    room.game = createGame(orderedBySeat);
+    room.gameGeneration += 1;
     room.phase = "playing";
     this.store.touch(room.roomId);
 
-    logger.info({ roomCode: room.roomCode, players: orderedBySeat.length }, "game started");
+    logger.info(
+      { roomCode: room.roomCode, players: orderedBySeat.length, bots: botSeats.length },
+      "game started",
+    );
     this.io.to(room.roomId).emit("game:started", { state: serializePublicState(room.game) });
     this.broadcastRoomState(room);
     this.sendPrivateStateToCurrentPlayer(room);
+    void this.maybeRunBotTurns(room, room.gameGeneration);
   }
 
   // ---------------------------------------------------------------------
@@ -271,6 +300,65 @@ export class RoomService {
       const nowCurrent = getCurrentPlayer(room.game);
       this.io.to(room.roomId).emit("turn:started", { seat: nowCurrent.seat, playerId: nowCurrent.playerId });
       this.sendPrivateStateToCurrentPlayer(room);
+      void this.maybeRunBotTurns(room, room.gameGeneration);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // AI turns
+  // ---------------------------------------------------------------------
+
+  /**
+   * Runs consecutive AI turns (draw + choose a move) for as long as the
+   * current player is bot-controlled, pausing briefly between steps so the
+   * game doesn't just instantly resolve in front of everyone. Stops as soon
+   * as a human's turn comes up or the game ends. Bots never hold a socket,
+   * so this is the only path that ever advances their turns.
+   */
+  private async maybeRunBotTurns(room: ServerRoom, generation: number): Promise<void> {
+    while (room.game && room.phase === "playing" && room.gameGeneration === generation) {
+      const current = getCurrentPlayer(room.game);
+      if (!current.isBot) return;
+
+      await delay(BOT_TURN_DELAY_MS);
+      // The room could have moved on (expired/reset/a newer game started)
+      // while we waited -- bail rather than act on a game we no longer own.
+      if (!room.game || room.phase !== "playing" || room.gameGeneration !== generation) return;
+
+      room.game = applyDraw(room.game);
+      this.store.touch(room.roomId);
+      this.io.to(room.roomId).emit("turn:cardDrawn", { seat: current.seat, card: room.game.activeCard ?? "" });
+      this.io.to(room.roomId).emit("game:publicState", { state: serializePublicState(room.game) });
+
+      await delay(BOT_MOVE_DELAY_MS);
+      if (!room.game || room.phase !== "playing" || room.gameGeneration !== generation) return;
+
+      const legal = getLegalMoves(room.game);
+      const move = chooseBotMove(room.game, legal);
+      const { state } = applyMove(room.game, move);
+      room.game = state;
+      this.store.touch(room.roomId);
+
+      this.io.to(room.roomId).emit("move:resolved", { state: serializePublicState(room.game) });
+      for (const event of state.lastEvents) {
+        if (event.type === "bumped") this.io.to(room.roomId).emit("player:bumped", event.payload as never);
+        if (event.type === "boostTriggered") this.io.to(room.roomId).emit("boost:triggered", event.payload as never);
+      }
+
+      if (state.winnerSeat) {
+        logger.info({ roomCode: room.roomCode, winner: state.winnerSeat }, "game won (by AI)");
+        room.phase = "gameOver";
+        this.io.to(room.roomId).emit("game:won", { seat: state.winnerSeat });
+        return;
+      }
+
+      const next = getCurrentPlayer(room.game);
+      this.io.to(room.roomId).emit("turn:started", { seat: next.seat, playerId: next.playerId });
+      if (!next.isBot) {
+        this.sendPrivateStateToCurrentPlayer(room);
+      }
+      // loop continues: if `next` is also a bot (or CARD_2 granted this same
+      // bot another turn), we keep going without waiting on any client.
     }
   }
 

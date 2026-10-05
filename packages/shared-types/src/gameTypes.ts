@@ -46,6 +46,7 @@ export interface PlayerState {
   ready: boolean;
   connected: boolean;
   isHostCandidate: boolean;
+  isBot: boolean;
   pawns: PawnState[];
   stats: PlayerStats;
 }

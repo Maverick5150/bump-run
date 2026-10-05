@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -24,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.bumprun.tv.board.BoardConfig
 import com.bumprun.tv.net.ConnectionStatus
 import com.bumprun.tv.net.RoomStatePayload
 import com.bumprun.tv.ui.theme.*
@@ -34,7 +37,7 @@ fun LobbyScreen(
     status: ConnectionStatus,
     roomState: RoomStatePayload?,
     connectErrorReason: String? = null,
-    onStart: () -> Unit,
+    onStart: (botSeats: List<String>) -> Unit,
 ) {
     val roomCode = roomState?.room?.roomCode
 
@@ -104,11 +107,20 @@ fun LobbyScreen(
             }
         }
 
-        // Right: player list + start button
+        // Right: player list + AI slots + start button
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
             Text("PLAYERS", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = BumpAccent)
             Spacer(Modifier.height(16.dp))
             val players = roomState?.players.orEmpty()
+            val humanTakenSeats = players.mapNotNull { it.seat }.toSet()
+            val openSeats = BoardConfig.SEAT_ORDER.filter { it !in humanTakenSeats }
+
+            var aiCount by remember { mutableStateOf(0) }
+            LaunchedEffect(openSeats.size) {
+                if (aiCount > openSeats.size) aiCount = openSeats.size
+            }
+            val botSeats = openSeats.take(aiCount)
+
             if (players.isEmpty()) {
                 Text("Waiting for players to join…", fontSize = 18.sp, color = BumpTextDim)
             }
@@ -128,17 +140,55 @@ fun LobbyScreen(
                     )
                 }
             }
+            botSeats.forEach { seat ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                ) {
+                    Box(modifier = Modifier.size(20.dp).clip(CircleShape).background(seatColor(seat)))
+                    Spacer(Modifier.width(12.dp))
+                    Text("AI ${seat.replaceFirstChar { it.uppercase() }}", fontSize = 20.sp, modifier = Modifier.weight(1f))
+                    Text("🤖", fontSize = 16.sp, color = BumpAccent2)
+                }
+            }
+
+            if (openSeats.isNotEmpty()) {
+                Spacer(Modifier.height(20.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    Text("AI PLAYERS", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = BumpTextDim)
+                    TvButton(
+                        text = "−",
+                        onClick = { aiCount = (aiCount - 1).coerceAtLeast(0) },
+                        enabled = aiCount > 0,
+                        height = 40.dp,
+                        modifier = Modifier.width(52.dp),
+                    )
+                    Text("$aiCount", fontSize = 20.sp, fontWeight = FontWeight.Black)
+                    TvButton(
+                        text = "+",
+                        onClick = { aiCount = (aiCount + 1).coerceAtMost(openSeats.size) },
+                        enabled = aiCount < openSeats.size,
+                        height = 40.dp,
+                        modifier = Modifier.width(52.dp),
+                    )
+                }
+            }
+
             Spacer(Modifier.height(32.dp))
-            val readyCount = players.count { it.ready && it.seat != null }
-            val canStart = readyCount >= 2
+            val readyPlayers = players.filter { it.ready && it.seat != null }
+            val canStart = readyPlayers.isNotEmpty() && (readyPlayers.size + botSeats.size) >= 2
             val startFocus = remember { FocusRequester() }
             LaunchedEffect(canStart) {
                 if (canStart) startFocus.requestFocus()
             }
             TvButton(
-                text = if (canStart) "START GAME" else "NEED 2+ READY PLAYERS",
+                text = when {
+                    canStart -> "START GAME"
+                    readyPlayers.isEmpty() -> "WAITING FOR A PLAYER"
+                    else -> "ADD AI OR A 2ND PLAYER"
+                },
                 icon = if (canStart) "▶" else null,
-                onClick = onStart,
+                onClick = { onStart(botSeats) },
                 enabled = canStart,
                 modifier = Modifier.fillMaxWidth(),
                 height = 60.dp,

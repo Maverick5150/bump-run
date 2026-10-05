@@ -5,6 +5,7 @@ import type { IRoomStore } from "../rooms/RoomStore.js";
 import { RateLimiter } from "./rateLimit.js";
 import { RoomApiError, RoomService } from "./RoomService.js";
 import {
+  gameStartSchema,
   playerReadySchema,
   playerSelectColorSchema,
   playerSetNameSchema,
@@ -121,8 +122,9 @@ export function registerSocketHandlers(io: IOServer, store: IRoomStore): RoomSer
 
     socket.on(
       "game:start",
-      guarded(() => {
-        service.startGame(socket);
+      guarded((payload: unknown) => {
+        const parsed = gameStartSchema.parse(payload ?? {});
+        service.startGame(socket, parsed.botSeats ?? []);
       }),
     );
 

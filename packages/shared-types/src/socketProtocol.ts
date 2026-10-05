@@ -39,7 +39,10 @@ export interface PlayerReadyPayload {
   ready: boolean;
 }
 
-export type GameStartPayload = Record<string, never>;
+export interface GameStartPayload {
+  /** Open seats (not claimed by a connected human) the host wants an AI to fill. */
+  botSeats?: SeatColor[];
+}
 
 export type TurnDrawPayload = Record<string, never>;
 

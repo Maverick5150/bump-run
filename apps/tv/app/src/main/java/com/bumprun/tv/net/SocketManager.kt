@@ -104,8 +104,12 @@ class SocketManager {
         })
     }
 
-    fun startGame() {
-        socket?.emit("game:start", JSONObject())
+    fun startGame(botSeats: List<String> = emptyList()) {
+        val payload = JSONObject()
+        if (botSeats.isNotEmpty()) {
+            payload.put("botSeats", org.json.JSONArray(botSeats))
+        }
+        socket?.emit("game:start", payload)
     }
 
     fun playAgain() {

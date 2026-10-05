@@ -61,8 +61,8 @@ class AppViewModel(appContext: Context, val settings: Settings) : ViewModel() {
         goTo(Screen.LOBBY)
     }
 
-    fun startGameFromLobby() {
-        socket.startGame()
+    fun startGameFromLobby(botSeats: List<String> = emptyList()) {
+        socket.startGame(botSeats)
     }
 
     fun playAgain() {

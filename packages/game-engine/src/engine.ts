@@ -22,6 +22,7 @@ export interface NewPlayerSpec {
   playerId: string;
   seat: SeatColor;
   nickname: string;
+  isBot?: boolean;
 }
 
 export function createGame(playerSpecs: NewPlayerSpec[], seed?: string | number): GameState {
@@ -43,6 +44,7 @@ export function createGame(playerSpecs: NewPlayerSpec[], seed?: string | number)
     ready: true,
     connected: true,
     isHostCandidate: false,
+    isBot: spec.isBot ?? false,
     pawns: Array.from({ length: PAWNS_PER_PLAYER }, (_, i) => ({
       id: `${spec.seat}-${i}`,
       ownerSeat: spec.seat,

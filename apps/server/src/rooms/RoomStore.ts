@@ -24,6 +24,15 @@ export interface ServerRoom {
   settings: RoomSettings;
   players: ServerPlayer[];
   game: GameState | null;
+  /**
+   * Bumped every time `game` is replaced with a freshly created game (see
+   * RoomService.startGame). The async AI turn loop captures this value and
+   * checks it on every wake-up so a stale loop from a previous game (e.g.
+   * if the host mashes Play Again and restarts quickly) notices it's no
+   * longer looking at the game it started with and stops, instead of
+   * racing a newer loop on the same room.
+   */
+  gameGeneration: number;
   createdAt: number;
   lastActivityAt: number;
   nextJoinOrder: number;
@@ -60,6 +69,7 @@ export class InMemoryRoomStore implements IRoomStore {
       settings: { maxPlayers: SERVER_CONFIG.MAX_PLAYERS, minPlayers: SERVER_CONFIG.MIN_PLAYERS },
       players: [],
       game: null,
+      gameGeneration: 0,
       createdAt: now,
       lastActivityAt: now,
       nextJoinOrder: 0,

@@ -24,6 +24,10 @@ export const playerReadySchema = z.object({
   ready: z.boolean(),
 });
 
+export const gameStartSchema = z.object({
+  botSeats: z.array(seatColorSchema).max(4).optional(),
+});
+
 const moveOptionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("enterFromStart"), pawnId: z.string() }),
   z.object({ kind: z.literal("forward"), pawnId: z.string(), distance: z.number().int().positive() }),

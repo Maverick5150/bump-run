@@ -94,7 +94,7 @@ private fun AppRoot(vm: AppViewModel) {
                         status = status,
                         roomState = roomState,
                         connectErrorReason = connectErrorReason,
-                        onStart = { vm.startGameFromLobby() },
+                        onStart = { botSeats -> vm.startGameFromLobby(botSeats) },
                     )
                 }
                 Screen.GAME -> gameState?.let {
