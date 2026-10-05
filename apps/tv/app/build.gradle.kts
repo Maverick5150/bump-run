@@ -25,6 +25,13 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+
+        // Real Fire TV / Android TV hardware is ARM; dropping x86/x86_64
+        // keeps Conscrypt's native libraries from quadrupling the APK for
+        // architectures no actual device here needs.
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     buildTypes {
@@ -102,6 +109,15 @@ dependencies {
     implementation("io.socket:socket.io-client:2.1.1") {
         exclude(group = "org.json", module = "json")
     }
+
+    // Bundles a modern, independent CA trust store + TLS implementation.
+    // Budget/old Fire TV Sticks can ship system trust stores that never
+    // learned to trust Let's Encrypt's current chain (it stopped
+    // cross-signing through the widely-trusted DST Root CA X3 in 2024 and
+    // now chains straight to ISRG Root X1, which pre-7.1.1 Android never
+    // added as a trusted root) -- installing Conscrypt as the top security
+    // provider sidesteps whatever the OS trust store does or doesn't know.
+    implementation("org.conscrypt:conscrypt-android:2.5.2")
 
     // QR code generation -- pure-Java, no Google Play Services dependency.
     implementation("com.google.zxing:core:3.5.3")

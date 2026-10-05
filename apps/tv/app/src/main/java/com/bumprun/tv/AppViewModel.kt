@@ -22,6 +22,7 @@ class AppViewModel(appContext: Context, val settings: Settings) : ViewModel() {
     val status get() = socket.status
     val roomState get() = socket.roomState
     val gameState get() = socket.gameState
+    val connectErrorReason get() = socket.lastConnectErrorReason
 
     private var lastHandledEventIdentity: Any? = null
 

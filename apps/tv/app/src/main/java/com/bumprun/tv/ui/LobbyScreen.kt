@@ -33,6 +33,7 @@ fun LobbyScreen(
     serverUrl: String,
     status: ConnectionStatus,
     roomState: RoomStatePayload?,
+    connectErrorReason: String? = null,
     onStart: () -> Unit,
 ) {
     val roomCode = roomState?.room?.roomCode
@@ -96,6 +97,10 @@ fun LobbyScreen(
                     fontSize = 14.sp,
                     color = BumpTextDim,
                 )
+                if (!connectErrorReason.isNullOrBlank()) {
+                    Spacer(Modifier.height(20.dp))
+                    Text("Details: $connectErrorReason", fontSize = 12.sp, color = BumpTextDim)
+                }
             }
         }
 

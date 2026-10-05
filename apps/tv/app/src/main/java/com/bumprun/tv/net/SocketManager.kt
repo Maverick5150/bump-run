@@ -25,6 +25,8 @@ class SocketManager {
     val gameState = MutableStateFlow<GamePublicState?>(null)
     val lastEvent = MutableStateFlow<GameEventInfo?>(null)
     val lastError = MutableStateFlow<String?>(null)
+    /** Raw reason from the last transport-level connect failure, for on-screen diagnostics. */
+    val lastConnectErrorReason = MutableStateFlow<String?>(null)
 
     var roomCode: String? = null
         private set
@@ -47,7 +49,10 @@ class SocketManager {
             reconnection = true
             reconnectionDelay = 500
             reconnectionDelayMax = 4000
-            transports = arrayOf("websocket")
+            // Prefer websocket but allow falling back to HTTP long-polling --
+            // the server supports both, and some networks interfere with the
+            // websocket upgrade specifically while plain HTTPS works fine.
+            transports = arrayOf("websocket", "polling")
         }
         val s = try {
             IO.socket(url, opts)
@@ -60,9 +65,16 @@ class SocketManager {
 
         s.on(Socket.EVENT_CONNECT) {
             status.value = ConnectionStatus.CONNECTED
+            lastConnectErrorReason.value = null
             createOrRejoinRoom()
         }
         s.on(Socket.EVENT_DISCONNECT) { status.value = ConnectionStatus.DISCONNECTED }
+        s.on(Socket.EVENT_CONNECT_ERROR) { args ->
+            val reason = (args.getOrNull(0) as? Exception)?.message
+                ?: args.getOrNull(0)?.toString()
+                ?: "unknown error"
+            lastConnectErrorReason.value = reason
+        }
         s.on("room:state") { args -> roomState.value = RoomStatePayload.parse(args[0] as JSONObject) }
         s.on("game:started") { args -> gameState.value = GamePublicState.parse((args[0] as JSONObject).getJSONObject("state")) }
         s.on("game:publicState") { args -> gameState.value = GamePublicState.parse((args[0] as JSONObject).getJSONObject("state")) }

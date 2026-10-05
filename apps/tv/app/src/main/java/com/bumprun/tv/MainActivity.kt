@@ -61,6 +61,7 @@ private fun AppRoot(vm: AppViewModel) {
     val status by vm.status.collectAsState()
     val roomState by vm.roomState.collectAsState()
     val gameState by vm.gameState.collectAsState()
+    val connectErrorReason by vm.connectErrorReason.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         AnimatedContent(
@@ -92,6 +93,7 @@ private fun AppRoot(vm: AppViewModel) {
                         serverUrl = vm.settings.serverUrl,
                         status = status,
                         roomState = roomState,
+                        connectErrorReason = connectErrorReason,
                         onStart = { vm.startGameFromLobby() },
                     )
                 }
