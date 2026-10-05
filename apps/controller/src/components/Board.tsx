@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PawnLocation, PublicGameState, SeatColor } from "@bump-run/shared-types";
-import { BOOST_LANES, BoardGeometry, ENTRY_OFFSET, MAIN_TRACK_LENGTH, SAFE_ZONE_LENGTH, SEAT_ORDER, type Point } from "../lib/boardGeometry.js";
+import { BOOST_LANES, BoardGeometry, MAIN_TRACK_LENGTH, SAFE_ZONE_LENGTH, SEAT_ORDER, type Point } from "../lib/boardGeometry.js";
 import { SEAT_INFO } from "../lib/seats.js";
 
 const SIZE = 320;
 const CENTER: Point = { x: SIZE / 2, y: SIZE / 2 };
-const TRACK_RADIUS = SIZE * 0.33;
+const BOARD_HALF = SIZE * 0.3;
 
 function locationKey(loc: PawnLocation): string {
   if (loc.zone === "main") return `main:${loc.pos}`;
@@ -23,7 +23,7 @@ function bezierControl(p0: Point, p2: Point, bow: number): Point {
   const dx = mx - CENTER.x;
   const dy = my - CENTER.y;
   const dist = Math.hypot(dx, dy) || 1;
-  const push = TRACK_RADIUS * 0.35 * bow;
+  const push = BOARD_HALF * 0.3 * bow;
   return { x: mx + (dx / dist) * push, y: my + (dy / dist) * push };
 }
 
@@ -43,45 +43,13 @@ function classify(prevZone: string | undefined, nextZone: string): { duration: n
   return { duration: 380, bow: 0.9 }; // ordinary forward/backward/safe-lane advance
 }
 
-function arcPath(startPos: number, endPos: number, radius: number): string {
-  const a0 = (startPos / MAIN_TRACK_LENGTH) * 2 * Math.PI - Math.PI / 2;
-  const a1 = (endPos / MAIN_TRACK_LENGTH) * 2 * Math.PI - Math.PI / 2;
-  const p0 = { x: CENTER.x + Math.cos(a0) * radius, y: CENTER.y + Math.sin(a0) * radius };
-  const p1 = { x: CENTER.x + Math.cos(a1) * radius, y: CENTER.y + Math.sin(a1) * radius };
-  let delta = endPos - startPos;
-  if (delta < 0) delta += MAIN_TRACK_LENGTH;
-  const largeArc = delta > MAIN_TRACK_LENGTH / 2 ? 1 : 0;
-  return `M ${p0.x} ${p0.y} A ${radius} ${radius} 0 ${largeArc} 1 ${p1.x} ${p1.y}`;
-}
-
-function angleForSeat(seat: SeatColor): number {
-  return (ENTRY_OFFSET[seat] / MAIN_TRACK_LENGTH) * 2 * Math.PI - Math.PI / 2;
-}
-
-function padCenterForSeat(seat: SeatColor): Point {
-  const angle = angleForSeat(seat);
-  return { x: CENTER.x + Math.cos(angle) * TRACK_RADIUS * 1.26, y: CENTER.y + Math.sin(angle) * TRACK_RADIUS * 1.26 };
-}
-
 const START_SLOT_OFFSET = SIZE * 0.034;
 
 /** Clean 2x2 grid of waiting slots inside a seat's start pad -- not a radial jitter, so pawns never overlap. */
-function startSlotPoint(seat: SeatColor, index: number): Point {
-  const pad = padCenterForSeat(seat);
+function startSlotPoint(padCenter: Point, index: number): Point {
   const dx = index % 2 === 0 ? -START_SLOT_OFFSET : START_SLOT_OFFSET;
   const dy = index < 2 ? -START_SLOT_OFFSET : START_SLOT_OFFSET;
-  return { x: pad.x + dx, y: pad.y + dy };
-}
-
-/** A small chevron tangent to the ring at `pos`, pointing the direction of travel, marking a slide lane. */
-function chevronAt(pos: number, radius: number, size: number): string {
-  const a = (pos / MAIN_TRACK_LENGTH) * 2 * Math.PI - Math.PI / 2;
-  const p = { x: CENTER.x + Math.cos(a) * radius, y: CENTER.y + Math.sin(a) * radius };
-  const tangent = a + Math.PI / 2;
-  const back = { x: p.x - Math.cos(tangent) * size, y: p.y - Math.sin(tangent) * size };
-  const n1 = { x: p.x + Math.cos(a) * size * 0.5, y: p.y + Math.sin(a) * size * 0.5 };
-  const n2 = { x: p.x - Math.cos(a) * size * 0.5, y: p.y - Math.sin(a) * size * 0.5 };
-  return `M ${n1.x} ${n1.y} L ${back.x} ${back.y} L ${n2.x} ${n2.y}`;
+  return { x: padCenter.x + dx, y: padCenter.y + dy };
 }
 
 interface Tween {
@@ -94,8 +62,13 @@ interface Tween {
 
 export function Board(props: { publicState: PublicGameState }) {
   const { publicState } = props;
-  const geometry = useMemo(() => new BoardGeometry(CENTER, TRACK_RADIUS), []);
+  const geometry = useMemo(() => new BoardGeometry(CENTER, BOARD_HALF), []);
   const currentSeat = publicState.players[publicState.currentPlayerIndex]?.seat;
+  const padCenters = useMemo(() => {
+    const map = new Map<SeatColor, Point>();
+    for (const seat of SEAT_ORDER) map.set(seat, geometry.startPadCenter(seat, SIZE * 0.1));
+    return map;
+  }, [geometry]);
 
   const prevKeys = useRef<Map<string, string>>(new Map());
   const renderPos = useRef<Map<string, Point>>(new Map());
@@ -105,7 +78,7 @@ export function Board(props: { publicState: PublicGameState }) {
   const [, bump] = useState(0);
 
   function targetFor(seat: SeatColor, loc: PawnLocation, idxInStart: number): Point {
-    if (loc.zone === "start") return startSlotPoint(seat, idxInStart);
+    if (loc.zone === "start") return startSlotPoint(padCenters.get(seat)!, idxInStart);
     if (loc.zone === "main") return geometry.pointOnRing(loc.pos);
     if (loc.zone === "safe") return geometry.safeCellPoint(seat, loc.index);
     return geometry.homePoint(seat);
@@ -169,10 +142,15 @@ export function Board(props: { publicState: PublicGameState }) {
     }),
   );
 
+  const boardLeft = CENTER.x - BOARD_HALF;
+  const boardTop = CENTER.y - BOARD_HALF;
+  const boardSide = BOARD_HALF * 2;
+  const ticks = Array.from({ length: MAIN_TRACK_LENGTH }, (_, i) => geometry.pointOnRing(i));
+
   return (
-    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 340, display: "block", margin: "0 auto" }}>
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 360, display: "block", margin: "0 auto" }}>
       <defs>
-        <radialGradient id="boardGlow" cx="50%" cy="46%" r="65%">
+        <radialGradient id="boardGlow" cx="50%" cy="46%" r="68%">
           <stop offset="0%" stopColor="#2c2750" />
           <stop offset="60%" stopColor="#1b1830" />
           <stop offset="100%" stopColor="#14121f" />
@@ -185,50 +163,56 @@ export function Board(props: { publicState: PublicGameState }) {
         ))}
       </defs>
 
-      <circle cx={CENTER.x} cy={CENTER.y} r={SIZE * 0.48} fill="url(#boardGlow)" />
-      <circle cx={CENTER.x} cy={CENTER.y} r={TRACK_RADIUS} fill="none" stroke="#352f57" strokeWidth={SIZE * 0.034} />
-      <circle cx={CENTER.x} cy={CENTER.y} r={TRACK_RADIUS} fill="none" stroke="#211d3c" strokeWidth={SIZE * 0.034} strokeDasharray={`0 ${(2 * Math.PI * TRACK_RADIUS) / MAIN_TRACK_LENGTH - 2} 2 0`} />
-      {Array.from({ length: MAIN_TRACK_LENGTH }, (_, i) => geometry.pointOnRing(i)).map((p, i) => (
+      <circle cx={CENTER.x} cy={CENTER.y} r={SIZE * 0.5} fill="url(#boardGlow)" />
+      <rect x={boardLeft} y={boardTop} width={boardSide} height={boardSide} rx={SIZE * 0.035} fill="none" stroke="#352f57" strokeWidth={SIZE * 0.034} />
+      {ticks.map((p, i) => (
         <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.0055} fill="#4a4472" />
       ))}
 
       {BOOST_LANES.map((lane) => {
         const hex = SEAT_INFO[lane.ownerColor].hex;
-        let span = lane.endPos - lane.startPos;
-        if (span < 0) span += MAIN_TRACK_LENGTH;
-        const chevronPositions = [0.22, 0.5, 0.78].map((f) => (lane.startPos + span * f) % MAIN_TRACK_LENGTH);
+        const p0 = geometry.pointOnRing(lane.startPos);
+        const p1 = geometry.pointOnRing(lane.endPos);
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const nx = -uy;
+        const ny = ux;
+        const chevSize = SIZE * 0.012;
         return (
           <g key={lane.id}>
-            <path
-              d={arcPath(lane.startPos, lane.endPos, TRACK_RADIUS)}
-              fill="none"
-              stroke={hex}
-              strokeOpacity={0.4}
-              strokeWidth={SIZE * 0.034}
-              strokeLinecap="round"
-            />
-            {chevronPositions.map((pos, i) => (
-              <path
-                key={i}
-                d={chevronAt(pos, TRACK_RADIUS, SIZE * 0.013)}
-                fill="none"
-                stroke="#ffffff"
-                strokeOpacity={0.6}
-                strokeWidth={1.6}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            ))}
+            <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={hex} strokeOpacity={0.4} strokeWidth={SIZE * 0.034} strokeLinecap="round" />
+            {[0.26, 0.5, 0.74].map((f, i) => {
+              const cx = p0.x + dx * f;
+              const cy = p0.y + dy * f;
+              const back = { x: cx - ux * chevSize, y: cy - uy * chevSize };
+              const n1 = { x: cx + nx * chevSize * 0.6, y: cy + ny * chevSize * 0.6 };
+              const n2 = { x: cx - nx * chevSize * 0.6, y: cy - ny * chevSize * 0.6 };
+              return (
+                <path
+                  key={i}
+                  d={`M ${n1.x} ${n1.y} L ${back.x} ${back.y} L ${n2.x} ${n2.y}`}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeOpacity={0.6}
+                  strokeWidth={1.6}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              );
+            })}
           </g>
         );
       })}
 
-      {/* Start pads: a visible platform + 4 clearly separated sockets outside the ring where each seat's pawns wait. */}
+      {/* Start pads: a visible platform + 4 clearly separated sockets outside each seat's entry corner. */}
       {SEAT_ORDER.map((seat) => {
         const hex = SEAT_INFO[seat].hex;
-        const padCenter = padCenterForSeat(seat);
+        const padCenter = padCenters.get(seat)!;
         const padSize = SIZE * 0.17;
-        const sockets = [0, 1, 2, 3].map((i) => startSlotPoint(seat, i));
+        const sockets = [0, 1, 2, 3].map((i) => startSlotPoint(padCenter, i));
         return (
           <g key={seat}>
             <rect
@@ -250,7 +234,7 @@ export function Board(props: { publicState: PublicGameState }) {
         );
       })}
 
-      {/* Safety zones + Home. */}
+      {/* Safety lanes + Home. */}
       {SEAT_ORDER.map((seat) => {
         const hex = SEAT_INFO[seat].hex;
         const cells = Array.from({ length: SAFE_ZONE_LENGTH }, (_, i) => geometry.safeCellPoint(seat, i + 1));
@@ -260,9 +244,9 @@ export function Board(props: { publicState: PublicGameState }) {
             {cells.map((p, i) => (
               <rect key={i} x={p.x - SIZE * 0.014} y={p.y - SIZE * 0.014} width={SIZE * 0.028} height={SIZE * 0.028} rx={SIZE * 0.006} fill={hex} opacity={0.4} />
             ))}
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.04} fill={hex} opacity={0.22} />
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.028} fill={hex} opacity={0.6} />
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.04} fill="none" stroke={hex} strokeWidth={1.5} opacity={0.9} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.031} fill={hex} opacity={0.22} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.022} fill={hex} opacity={0.65} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.022} fill="none" stroke={hex} strokeWidth={1.4} opacity={0.9} />
           </g>
         );
       })}
