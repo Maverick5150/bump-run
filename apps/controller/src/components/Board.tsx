@@ -18,6 +18,30 @@ const PAWN_IMAGE: Record<SeatColor, string> = {
 };
 const BOARD_FRAME_IMAGE = "/art/board/board_frame.png";
 
+/**
+ * How far to rotate the whole board so the CURRENT seat's own corner (and
+ * Start pad) always ends up pointing toward the bottom of the screen --
+ * same idea as turning a physical board to face whoever's turn it is.
+ * Each seat's corner sits 90 degrees from the next, so these are exactly
+ * 90 degrees apart; the values are "how much extra clockwise rotation
+ * brings that corner from its resting angle to the bottom."
+ */
+const ROTATION_FOR_SEAT: Record<SeatColor, number> = { red: 225, blue: 135, green: 45, yellow: 315 };
+
+function rotatePoint(p: Point, angleDeg: number, center: Point): Point {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const dx = p.x - center.x;
+  const dy = p.y - center.y;
+  return { x: center.x + dx * cos - dy * sin, y: center.y + dx * sin + dy * cos };
+}
+
+/** Shortest signed angular delta from `from` to `to`, in (-180, 180] -- so the board always spins the short way, never the long way around. */
+function shortestDelta(from: number, to: number): number {
+  return ((to - from + 540) % 360) - 180;
+}
+
 function locationKey(loc: PawnLocation): string {
   if (loc.zone === "main") return `main:${loc.pos}`;
   if (loc.zone === "safe") return `safe:${loc.index}`;
@@ -88,6 +112,10 @@ export function Board(props: { publicState: PublicGameState }) {
   const rafId = useRef<number | null>(null);
   const [, bump] = useState(0);
 
+  const prevSeatRef = useRef<SeatColor | undefined>(undefined);
+  const rotationRef = useRef<number>(currentSeat ? ROTATION_FOR_SEAT[currentSeat] : 0);
+  const rotationTween = useRef<{ from: number; to: number; startedAt: number; duration: number } | null>(null);
+
   function targetFor(seat: SeatColor, loc: PawnLocation, idxInStart: number): Point {
     if (loc.zone === "start") return startSlotPoint(padCenters.get(seat)!, idxInStart);
     if (loc.zone === "main") return geometry.pointOnRing(loc.pos);
@@ -97,6 +125,17 @@ export function Board(props: { publicState: PublicGameState }) {
 
   useEffect(() => {
     const now = performance.now();
+    if (currentSeat && prevSeatRef.current !== currentSeat) {
+      if (prevSeatRef.current === undefined) {
+        rotationRef.current = ROTATION_FOR_SEAT[currentSeat];
+      } else {
+        const target = ROTATION_FOR_SEAT[currentSeat];
+        const from = rotationRef.current;
+        const to = from + shortestDelta(from, target);
+        rotationTween.current = { from, to, startedAt: now, duration: 600 };
+      }
+      prevSeatRef.current = currentSeat;
+    }
     for (const player of publicState.players) {
       let startIdx = 0;
       for (const pawn of player.pawns) {
@@ -132,6 +171,13 @@ export function Board(props: { publicState: PublicGameState }) {
       if (now - startedAt > 320) pops.current.delete(id);
       else active = true;
     }
+    const rt = rotationTween.current;
+    if (rt) {
+      const t = Math.min(1, (now - rt.startedAt) / rt.duration);
+      rotationRef.current = rt.from + (rt.to - rt.from) * ease(t);
+      if (t >= 1) rotationTween.current = null;
+      else active = true;
+    }
     bump((n) => n + 1);
     rafId.current = active ? requestAnimationFrame(step) : null;
   }
@@ -144,13 +190,18 @@ export function Board(props: { publicState: PublicGameState }) {
   );
 
   const now = performance.now();
+  const boardRotation = rotationRef.current;
   const drawn = publicState.players.flatMap((player) =>
     player.pawns.map((pawn) => {
       const p = renderPos.current.get(pawn.id) ?? CENTER;
+      // Pawns render outside the rotated board group (so the artwork/number
+      // stay upright), so their on-screen position has to be rotated here
+      // by hand to match wherever the board itself currently points.
+      const rp = rotatePoint(p, boardRotation, CENTER);
       const popStart = pops.current.get(pawn.id);
       const popScale = popStart !== undefined ? 1 + 0.35 * Math.sin(Math.min(1, (now - popStart) / 320) * Math.PI) : 1;
       const number = Number(pawn.id.split("-")[1] ?? 0) + 1; // pawn.id is "<seat>-<0-based index>"
-      return { id: pawn.id, seat: player.seat, number, x: p.x, y: p.y, scale: popScale, isCurrent: player.seat === currentSeat };
+      return { id: pawn.id, seat: player.seat, number, x: rp.x, y: rp.y, scale: popScale, isCurrent: player.seat === currentSeat };
     }),
   );
 
@@ -170,6 +221,7 @@ export function Board(props: { publicState: PublicGameState }) {
       </defs>
 
       <circle cx={CENTER.x} cy={CENTER.y} r={SIZE * 0.5} fill="url(#boardGlow)" />
+      <g transform={`rotate(${boardRotation} ${CENTER.x} ${CENTER.y})`}>
       <rect
         x={boardLeft - TRACK_BOX * 0.65}
         y={boardTop - TRACK_BOX * 0.65}
@@ -290,6 +342,7 @@ export function Board(props: { publicState: PublicGameState }) {
           </g>
         );
       })}
+      </g>
 
       {drawn.map((p) => {
         const hex = SEAT_INFO[p.seat].hex;
