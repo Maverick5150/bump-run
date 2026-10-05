@@ -7,6 +7,8 @@ const SIZE = 320;
 const CENTER: Point = { x: SIZE / 2, y: SIZE / 2 };
 const BOARD_HALF = SIZE * 0.33;
 const TRACK_BOX = SIZE * 0.042;
+/** Scales the hand-drawn pawn silhouette (authored in its own ~22x16 unit coordinate space) to a bold, clearly visible size on the board. */
+const PAWN_SCALE = 1.3;
 
 function locationKey(loc: PawnLocation): string {
   if (loc.zone === "main") return `main:${loc.pos}`;
@@ -44,7 +46,7 @@ function classify(prevZone: string | undefined, nextZone: string): { duration: n
   return { duration: 380, bow: 0.9 }; // ordinary forward/backward/safe-lane advance
 }
 
-const START_SLOT_OFFSET = SIZE * 0.038;
+const START_SLOT_OFFSET = SIZE * 0.044;
 
 /** Clean 2x2 grid of waiting slots inside a seat's start pad -- not a radial jitter, so pawns never overlap. */
 function startSlotPoint(padCenter: Point, index: number): Point {
@@ -149,7 +151,7 @@ export function Board(props: { publicState: PublicGameState }) {
   const ticks = Array.from({ length: MAIN_TRACK_LENGTH }, (_, i) => geometry.pointOnRing(i));
 
   return (
-    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 440, display: "block", margin: "0 auto" }}>
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 600, display: "block", margin: "0 auto" }}>
       <defs>
         <radialGradient id="boardGlow" cx="50%" cy="46%" r="68%">
           <stop offset="0%" stopColor="#2c2750" />
@@ -248,7 +250,7 @@ export function Board(props: { publicState: PublicGameState }) {
               strokeWidth={1.5}
             />
             {sockets.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.027} fill="#00000030" stroke={hex} strokeOpacity={0.6} strokeWidth={1.2} />
+              <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.034} fill="#00000030" stroke={hex} strokeOpacity={0.6} strokeWidth={1.2} />
             ))}
           </g>
         );
@@ -286,13 +288,33 @@ export function Board(props: { publicState: PublicGameState }) {
       {drawn.map((p) => {
         const hex = SEAT_INFO[p.seat].hex;
         const glyph = SEAT_INFO[p.seat].glyph;
+        const s = PAWN_SCALE;
         return (
           <g key={p.id} transform={`translate(${p.x} ${p.y}) scale(${p.scale})`} style={{ transition: "opacity 200ms" }}>
-            {p.isCurrent && <circle r={SIZE * 0.044} fill={hex} opacity={0.32} />}
-            <circle r={SIZE * 0.034} fill={`url(#pawnGrad-${p.seat})`} />
-            <ellipse cx={0} cy={SIZE * 0.006} rx={SIZE * 0.026} ry={SIZE * 0.011} fill="#000" opacity={0.32} />
-            <circle r={SIZE * 0.026} fill={hex} stroke="#fff" strokeOpacity={0.92} strokeWidth={SIZE * 0.0042} />
-            <text textAnchor="middle" dominantBaseline="central" fontSize={SIZE * 0.024} fill="#00000085" style={{ pointerEvents: "none" }}>
+            {p.isCurrent && <circle r={SIZE * 0.05} fill={hex} opacity={0.3} />}
+            <ellipse cx={0} cy={9 * s} rx={9 * s} ry={3 * s} fill="#000" opacity={0.38} />
+            <path
+              d={`M ${-6 * s} ${1 * s} C ${-8 * s} ${4 * s} ${-8 * s} ${7 * s} ${-8 * s} ${8 * s}
+                  L ${8 * s} ${8 * s} C ${8 * s} ${7 * s} ${8 * s} ${4 * s} ${6 * s} ${1 * s}
+                  C ${7 * s} ${-3 * s} ${4 * s} ${-6 * s} 0 ${-6 * s}
+                  C ${-4 * s} ${-6 * s} ${-7 * s} ${-3 * s} ${-6 * s} ${1 * s} Z`}
+              fill={hex}
+              stroke="#ffffff"
+              strokeOpacity={0.55}
+              strokeWidth={0.6 * s}
+            />
+            <circle cx={0} cy={-9 * s} r={5.2 * s} fill={hex} stroke="#ffffff" strokeOpacity={0.7} strokeWidth={0.6 * s} />
+            <circle cx={0} cy={-9 * s} r={5.2 * s} fill={`url(#pawnGrad-${p.seat})`} />
+            <ellipse cx={-1.7 * s} cy={-10.6 * s} rx={1.9 * s} ry={1.3 * s} fill="#ffffff" opacity={0.55} />
+            <text
+              textAnchor="middle"
+              dominantBaseline="central"
+              x={0}
+              y={2.5 * s}
+              fontSize={4.4 * s}
+              fill="#00000090"
+              style={{ pointerEvents: "none" }}
+            >
               {glyph}
             </text>
           </g>

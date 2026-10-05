@@ -53,10 +53,12 @@ export function GameScreen(props: {
   const passOnly = legalMoves.length === 1 && legalMoves[0]!.kind === "pass";
 
   function choose(move: MoveOption) {
-    vibrate(20);
-    sounds.moveTick();
+    // The actual move must always fire, no matter what -- sound/vibration
+    // are cosmetic and must never be able to block it, so they run after.
     setDrill({ step: "none" });
     props.onChooseMove(move);
+    vibrate(20);
+    sounds.moveTick();
   }
 
   if (!isMyTurn) {

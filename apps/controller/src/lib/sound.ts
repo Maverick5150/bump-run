@@ -69,7 +69,7 @@ function noiseBurst(startTime: number, duration: number, opts: NoiseOpts = {}): 
   src.stop(startTime + duration + 0.03);
 }
 
-export const sounds = {
+const rawSounds = {
   /** Menu navigation / generic UI tap. */
   select(): void {
     const t = getCtx().currentTime;
@@ -120,3 +120,23 @@ export const sounds = {
     [523.25, 659.25, 783.99, 1046.5].forEach((f) => tone(f, t + 0.9, 1.3, { type: "triangle", gain: 0.1 }));
   },
 };
+
+/**
+ * Sound is pure garnish -- it must never be able to break gameplay. Every
+ * exported sound function is wrapped so a failure (blocked AudioContext,
+ * browser quirk, anything) is swallowed silently instead of throwing back
+ * into whatever click handler called it.
+ */
+function safe(fn: () => void): () => void {
+  return () => {
+    try {
+      fn();
+    } catch {
+      // sound failed -- ignore, the game must go on
+    }
+  };
+}
+
+export const sounds: typeof rawSounds = Object.fromEntries(
+  Object.entries(rawSounds).map(([key, fn]) => [key, safe(fn)]),
+) as typeof rawSounds;
