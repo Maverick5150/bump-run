@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- racetrack ring -->
+    <path android:pathData="M54,54 m-28,0 a28,28 0 1,0 56,0 a28,28 0 1,0 -56,0"
+        android:strokeColor="#2DE0C8" android:strokeWidth="3" android:fillColor="#00000000" android:strokeAlpha="0.9" />
+    <!-- seat-colored dots along the track -->
+    <path android:pathData="M75,36 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" android:fillColor="#3BA7FF" />
+    <path android:pathData="M30,68 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" android:fillColor="#36D17A" />
+    <path android:pathData="M64,80 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" android:fillColor="#FFD23F" />
+    <!-- pawn token shadow -->
+    <path android:pathData="M57,58 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0" android:fillColor="#000000" android:fillAlpha="0.25" />
+    <!-- pawn token -->
+    <path android:pathData="M54,54 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="36" android:startY="36"
+                android:endX="72" android:endY="72"
+                android:startColor="#FFD23F"
+                android:endColor="#FF5A3C" />
+        </aapt:attr>
+    </path>
+    <!-- sparkle highlight -->
+    <path android:pathData="M46,37 L48.5,42 L54,44 L48.5,46 L46,51 L43.5,46 L38,44 L43.5,42 Z" android:fillColor="#FFFFFF" android:fillAlpha="0.92" />
+</vector>
