@@ -4,8 +4,9 @@ import { pathRoomCode } from "../hooks/useGameSocket.js";
 export function JoinScreen(props: {
   joinError: string | null;
   onJoin: (roomCode: string, nickname: string) => void;
-  onStartSolo: (nickname: string, botCount: number) => void;
   onHostRoom: (nickname: string) => void;
+  onShowHowToPlay: () => void;
+  onShowSettings: () => void;
 }) {
   const [roomCode, setRoomCode] = useState(pathRoomCode());
   const [nickname, setNickname] = useState("");
@@ -15,7 +16,15 @@ export function JoinScreen(props: {
 
   return (
     <div className="screen">
-      <div className="logo">
+      <div className="corner-controls">
+        <button className="icon-btn" aria-label="How to play" onClick={props.onShowHowToPlay}>
+          ?
+        </button>
+        <button className="icon-btn" aria-label="Settings" onClick={props.onShowSettings}>
+          ⚙
+        </button>
+      </div>
+      <div className="logo" style={{ marginTop: 28 }}>
         BUMP<span className="accent"> RUN</span>
       </div>
       <div className="tagline">Race. Bump. Win.</div>
@@ -34,12 +43,12 @@ export function JoinScreen(props: {
 
         {props.joinError && <div style={{ color: "var(--danger)", fontWeight: 600 }}>{props.joinError}</div>}
 
-        <button className="btn-primary" onClick={() => props.onStartSolo(effectiveName, 3)}>
-          Play solo vs AI
+        <button className="btn-primary" onClick={() => props.onHostRoom(effectiveName)}>
+          Start a Game
         </button>
-        <button className="btn-secondary" onClick={() => props.onHostRoom(effectiveName)}>
-          Host a room (play with friends, no TV)
-        </button>
+        <div className="card-blurb" style={{ marginTop: -6 }}>
+          Choose your color and AI opponents next -- play solo, with friends, or both.
+        </div>
 
         <div className="divider">or join a room someone else is hosting</div>
 

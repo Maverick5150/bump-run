@@ -7,7 +7,6 @@ import type {
   ServerAck,
 } from "@bump-run/shared-types";
 import { getHostSocket, getSocket, type AppSocket } from "../lib/socket.js";
-import { ALL_SEATS } from "../lib/seats.js";
 import { sounds } from "../lib/sound.js";
 import { clearSession, loadSession, saveSession } from "../lib/storage.js";
 
@@ -41,7 +40,6 @@ export interface GameSocketState {
   boostEvent: BoostEvent | null;
   winnerSeat: SeatColor | null;
   join: (roomCode: string, nickname: string) => void;
-  startSolo: (nickname: string, botCount: number) => void;
   hostRoom: (nickname: string) => void;
   startGameAsHost: (botSeats: SeatColor[]) => void;
   playAgainAsHost: () => void;
@@ -298,27 +296,13 @@ export function useGameSocket(): GameSocketState {
     [socket],
   );
 
-  const startSolo = useCallback(
-    (nicknameInput: string, botCount: number) => {
+  const hostRoom = useCallback(
+    (nicknameInput: string) => {
       setJoinError(null);
       createAndJoinSelf(nicknameInput || "You")
         .then(() => {
           socket.emit("player:selectColor", { seat: "red" });
           socket.emit("player:ready", { ready: true });
-          const botSeats = ALL_SEATS.filter((s) => s !== "red").slice(0, botCount);
-          hostSocketRef.current?.emit("game:start", { botSeats });
-        })
-        .catch((err: Error) => setJoinError(err.message));
-    },
-    [createAndJoinSelf, socket],
-  );
-
-  const hostRoom = useCallback(
-    (nicknameInput: string) => {
-      setJoinError(null);
-      createAndJoinSelf(nicknameInput || "Host")
-        .then(() => {
-          socket.emit("player:selectColor", { seat: "red" });
           setPhase("lobby");
         })
         .catch((err: Error) => setJoinError(err.message));
@@ -364,7 +348,6 @@ export function useGameSocket(): GameSocketState {
     boostEvent,
     winnerSeat,
     join,
-    startSolo,
     hostRoom,
     startGameAsHost,
     playAgainAsHost,

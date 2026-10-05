@@ -141,7 +141,8 @@ export function Board(props: { publicState: PublicGameState }) {
       const p = renderPos.current.get(pawn.id) ?? CENTER;
       const popStart = pops.current.get(pawn.id);
       const popScale = popStart !== undefined ? 1 + 0.35 * Math.sin(Math.min(1, (now - popStart) / 320) * Math.PI) : 1;
-      return { id: pawn.id, seat: player.seat, x: p.x, y: p.y, scale: popScale, isCurrent: player.seat === currentSeat };
+      const number = Number(pawn.id.split("-")[1] ?? 0) + 1; // pawn.id is "<seat>-<0-based index>"
+      return { id: pawn.id, seat: player.seat, number, x: p.x, y: p.y, scale: popScale, isCurrent: player.seat === currentSeat };
     }),
   );
 
@@ -209,13 +210,16 @@ export function Board(props: { publicState: PublicGameState }) {
             {[0.26, 0.5, 0.74].map((f, i) => {
               const cx = p0.x + dx * f;
               const cy = p0.y + dy * f;
-              const back = { x: cx - ux * chevSize, y: cy - uy * chevSize };
-              const n1 = { x: cx + nx * chevSize * 0.6, y: cy + ny * chevSize * 0.6 };
-              const n2 = { x: cx - nx * chevSize * 0.6, y: cy - ny * chevSize * 0.6 };
+              // Vertex leads in the direction of travel (p0 -> p1); the two
+              // wings trail behind it, so the chevron reads as ">" pointing
+              // the way a pawn actually slides.
+              const tip = { x: cx + ux * chevSize, y: cy + uy * chevSize };
+              const w1 = { x: cx - ux * chevSize * 0.5 + nx * chevSize * 0.6, y: cy - uy * chevSize * 0.5 + ny * chevSize * 0.6 };
+              const w2 = { x: cx - ux * chevSize * 0.5 - nx * chevSize * 0.6, y: cy - uy * chevSize * 0.5 - ny * chevSize * 0.6 };
               return (
                 <path
                   key={i}
-                  d={`M ${n1.x} ${n1.y} L ${back.x} ${back.y} L ${n2.x} ${n2.y}`}
+                  d={`M ${w1.x} ${w1.y} L ${tip.x} ${tip.y} L ${w2.x} ${w2.y}`}
                   fill="none"
                   stroke="#ffffff"
                   strokeOpacity={0.6}
@@ -287,7 +291,6 @@ export function Board(props: { publicState: PublicGameState }) {
 
       {drawn.map((p) => {
         const hex = SEAT_INFO[p.seat].hex;
-        const glyph = SEAT_INFO[p.seat].glyph;
         const s = PAWN_SCALE;
         return (
           <g key={p.id} transform={`translate(${p.x} ${p.y}) scale(${p.scale})`} style={{ transition: "opacity 200ms" }}>
@@ -310,12 +313,13 @@ export function Board(props: { publicState: PublicGameState }) {
               textAnchor="middle"
               dominantBaseline="central"
               x={0}
-              y={2.5 * s}
-              fontSize={4.4 * s}
-              fill="#00000090"
+              y={-8.9 * s}
+              fontSize={6.2 * s}
+              fontWeight={800}
+              fill="#ffffff"
               style={{ pointerEvents: "none" }}
             >
-              {glyph}
+              {p.number}
             </text>
           </g>
         );

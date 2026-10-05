@@ -1,11 +1,18 @@
+import { useState } from "react";
 import { useGameSocket } from "./hooks/useGameSocket.js";
 import { JoinScreen } from "./screens/JoinScreen.js";
 import { LobbyScreen } from "./screens/LobbyScreen.js";
 import { GameScreen } from "./screens/GameScreen.js";
 import { WinScreen } from "./screens/WinScreen.js";
+import { HowToPlayScreen } from "./screens/HowToPlayScreen.js";
+import { SettingsScreen } from "./screens/SettingsScreen.js";
 
 export function App() {
   const game = useGameSocket();
+  const [overlay, setOverlay] = useState<"none" | "howToPlay" | "settings">("none");
+
+  if (overlay === "howToPlay") return <HowToPlayScreen onClose={() => setOverlay("none")} />;
+  if (overlay === "settings") return <SettingsScreen onClose={() => setOverlay("none")} />;
 
   return (
     <>
@@ -15,8 +22,9 @@ export function App() {
         <JoinScreen
           joinError={game.joinError}
           onJoin={game.join}
-          onStartSolo={game.startSolo}
           onHostRoom={game.hostRoom}
+          onShowHowToPlay={() => setOverlay("howToPlay")}
+          onShowSettings={() => setOverlay("settings")}
         />
       )}
 

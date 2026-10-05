@@ -5,6 +5,8 @@
  * entirely original (nothing sampled or borrowed).
  */
 
+import { getSettings } from "./settings.js";
+
 let ctx: AudioContext | null = null;
 
 function getCtx(): AudioContext {
@@ -129,6 +131,7 @@ const rawSounds = {
  */
 function safe(fn: () => void): () => void {
   return () => {
+    if (!getSettings().soundEnabled) return;
     try {
       fn();
     } catch {

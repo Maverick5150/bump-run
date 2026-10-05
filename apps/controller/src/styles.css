@@ -23,7 +23,10 @@ body,
 }
 
 body {
-  background: radial-gradient(circle at 50% -10%, #2a2448 0%, var(--bg) 60%);
+  background-color: var(--bg);
+  background-image: radial-gradient(circle at 50% -10%, #2a2448 0%, var(--bg) 60%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1.4px);
+  background-size: auto, 22px 22px;
   color: var(--text);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
@@ -36,6 +39,15 @@ body {
   align-items: center;
   padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
   gap: 18px;
+}
+
+/* Gameplay packs a board + status + card + move list into one view --
+   tighter spacing so it fits a phone screen without scrolling. */
+.screen.game-screen {
+  min-height: auto;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  gap: 8px;
+  justify-content: flex-start;
 }
 
 .logo {
@@ -114,9 +126,9 @@ button:disabled {
 
 .btn-draw {
   width: 100%;
-  padding: 28px;
-  font-size: 1.6rem;
-  border-radius: 24px;
+  padding: 16px;
+  font-size: 1.4rem;
+  border-radius: 20px;
   background: linear-gradient(135deg, var(--accent-2), #58f0da);
   color: #052b26;
 }
@@ -210,18 +222,21 @@ button:disabled {
   color: var(--accent-2);
 }
 
+/* 5:7 matches the standard playing-card ratio used by the commissioned card artwork (500x700), so the art drops in without letterboxing. */
 .card-display {
-  width: 160px;
-  height: 220px;
-  border-radius: 20px;
+  width: 90px;
+  height: 126px;
+  border-radius: 14px;
   background: linear-gradient(160deg, var(--bg-card), var(--bg-elevated));
-  border: 3px solid var(--accent-2);
+  border: 2px solid var(--accent-2);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 4rem;
+  gap: 2px;
+  font-size: 2rem;
   font-weight: 900;
-  box-shadow: 0 10px 30px rgba(45, 224, 200, 0.25);
+  box-shadow: 0 6px 18px rgba(45, 224, 200, 0.22);
 }
 .card-blurb {
   text-align: center;
@@ -232,7 +247,7 @@ button:disabled {
 .move-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
   max-width: 420px;
 }
@@ -244,6 +259,9 @@ button:disabled {
   background: var(--bg-elevated);
   border: 2px solid #3a3458;
   text-align: left;
+  padding: 11px 16px;
+  min-height: 44px;
+  font-size: 0.95rem;
 }
 .move-option .pawn-chip {
   display: inline-flex;
@@ -305,6 +323,105 @@ button:disabled {
   font-weight: 800;
   min-width: 24px;
   text-align: center;
+}
+
+.corner-controls {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background: var(--bg-elevated);
+  border: 2px solid #3a3458;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-list {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  font-weight: 600;
+}
+.toggle-btn {
+  min-height: 36px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: #3a3458;
+  font-size: 0.9rem;
+}
+.toggle-btn.on {
+  background: linear-gradient(135deg, var(--accent-2), #58f0da);
+  color: #052b26;
+}
+
+.screen.how-to-play {
+  min-height: 100vh;
+  align-items: stretch;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+  gap: 14px;
+  overflow-y: auto;
+}
+.rules-section {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.rules-heading {
+  font-weight: 800;
+  color: var(--accent-2);
+  margin-bottom: 4px;
+}
+.rules-section p {
+  color: var(--text-dim);
+  margin: 0;
+  line-height: 1.4;
+}
+.card-ref-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.card-ref-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+}
+.card-ref-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+}
+.card-ref-label {
+  font-weight: 800;
+}
+.card-ref-blurb {
+  font-size: 0.85rem;
+  color: var(--text-dim);
 }
 
 .link-button {

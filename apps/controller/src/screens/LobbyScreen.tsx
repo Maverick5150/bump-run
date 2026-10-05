@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RoomStatePayload, SeatColor } from "@bump-run/shared-types";
 import { ALL_SEATS, SEAT_INFO } from "../lib/seats.js";
 
@@ -15,11 +15,24 @@ export function LobbyScreen(props: {
   const takenSeats = new Set(room?.players.filter((p) => p.playerId !== playerId).map((p) => p.seat) ?? []);
   const openSeats = ALL_SEATS.filter((s) => s !== me?.seat && !takenSeats.has(s));
 
-  const [aiCount, setAiCount] = useState(0);
+  // Defaults to filling every open seat with AI (so solo play needs zero
+  // extra taps -- just press Start) until the host manually adjusts the
+  // stepper, after which it only ever clamps down if seats fill up.
+  const [aiCount, setAiCount] = useState(openSeats.length);
+  const aiTouched = useRef(false);
   useEffect(() => {
-    setAiCount((c) => Math.min(c, openSeats.length));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only clamp when the number of open seats shrinks
+    if (aiTouched.current) {
+      setAiCount((c) => Math.min(c, openSeats.length));
+    } else {
+      setAiCount(openSeats.length);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only reacts to seat-count changes
   }, [openSeats.length]);
+
+  function adjustAiCount(delta: number) {
+    aiTouched.current = true;
+    setAiCount((c) => Math.max(0, Math.min(openSeats.length, c + delta)));
+  }
 
   const botSeats = openSeats.slice(0, aiCount);
   const readyCount = room?.players.filter((p) => p.ready && p.seat).length ?? 0;
@@ -93,19 +106,11 @@ export function LobbyScreen(props: {
           {openSeats.length > 0 && (
             <div className="ai-stepper">
               <span>AI players</span>
-              <button
-                className="stepper-btn"
-                disabled={aiCount <= 0}
-                onClick={() => setAiCount((c) => Math.max(0, c - 1))}
-              >
+              <button className="stepper-btn" disabled={aiCount <= 0} onClick={() => adjustAiCount(-1)}>
                 −
               </button>
               <span className="stepper-count">{aiCount}</span>
-              <button
-                className="stepper-btn"
-                disabled={aiCount >= openSeats.length}
-                onClick={() => setAiCount((c) => Math.min(openSeats.length, c + 1))}
-              >
+              <button className="stepper-btn" disabled={aiCount >= openSeats.length} onClick={() => adjustAiCount(1)}>
                 +
               </button>
             </div>

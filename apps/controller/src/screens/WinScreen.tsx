@@ -1,4 +1,5 @@
 import type { SeatColor } from "@bump-run/shared-types";
+import { PawnToken } from "../components/PawnToken.js";
 import { SEAT_INFO } from "../lib/seats.js";
 
 export function WinScreen(props: {
@@ -13,6 +14,7 @@ export function WinScreen(props: {
       <div className="logo">
         BUMP<span className="accent"> RUN</span>
       </div>
+      {props.winnerSeat && <PawnToken seat={props.winnerSeat} size={140} />}
       <div className="winner-title" style={{ color: info?.hex }}>
         {info ? `${info.label} WINS!` : "Game Over"}
       </div>

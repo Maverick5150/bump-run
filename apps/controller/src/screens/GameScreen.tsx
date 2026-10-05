@@ -1,11 +1,24 @@
-import { useMemo, useState } from "react";
-import type { CardType, MoveOption, PublicGameState } from "@bump-run/shared-types";
+import { useMemo, useState, type CSSProperties } from "react";
+import type { CardType, MoveOption, PublicGameState, SeatColor } from "@bump-run/shared-types";
 import { CARD_LABELS } from "@bump-run/shared-types";
 import { Board } from "../components/Board.js";
+import { CardArt } from "../components/CardArt.js";
 import { SEAT_INFO } from "../lib/seats.js";
+import { getSettings } from "../lib/settings.js";
 import { sounds } from "../lib/sound.js";
 
+function seatFromPawnId(pawnId: string): SeatColor {
+  return pawnId.split("-")[0] as SeatColor;
+}
+
+/** Fills a move-option button with its pawn's seat color -- text stays dark for contrast, same treatment as the seat-picker tiles in the lobby. */
+function seatButtonStyle(seat: SeatColor): CSSProperties {
+  const hex = SEAT_INFO[seat].hex;
+  return { background: hex, borderColor: "rgba(255,255,255,0.4)", color: "#0b0a14" };
+}
+
 function vibrate(pattern: number | number[]) {
+  if (!getSettings().vibrationEnabled) return;
   if ("vibrate" in navigator) {
     try {
       navigator.vibrate(pattern);
@@ -64,7 +77,7 @@ export function GameScreen(props: {
   if (!isMyTurn) {
     const seatInfo = current?.seat ? SEAT_INFO[current.seat] : null;
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
         <div className="status-banner">
@@ -83,7 +96,7 @@ export function GameScreen(props: {
 
   if (!activeCard) {
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
         <div className="status-banner active">Your turn!</div>
@@ -104,10 +117,10 @@ export function GameScreen(props: {
 
   if (passOnly) {
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display">{info.label}</div>
+        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
         <div className="card-blurb">No legal moves with this card. Pass and continue.</div>
         <button className="btn-primary" onClick={() => choose({ kind: "pass" })}>
           Pass
@@ -120,14 +133,18 @@ export function GameScreen(props: {
   if (drill.step === "split-pawn" || (splitOptions.length > 0 && drill.step === "none" && simpleOptions.length === 0 && swapOptions.length === 0 && bumpOptions.length === 0)) {
     const pawns = [...new Set(splitOptions.map((m) => (m.kind === "split" ? m.firstPawnId : "")))];
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display">{info.label}</div>
-        <div className="card-blurb">Split move: choose the first pawn to move.</div>
+        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-blurb">
+          {info.blurb}
+          <br />
+          Split move: choose the first pawn to move.
+        </div>
         <div className="move-list">
           {pawns.map((pawnId) => (
-            <button key={pawnId} className="move-option" onClick={() => setDrill({ step: "split-detail", firstPawnId: pawnId })}>
+            <button key={pawnId} className="move-option" style={seatButtonStyle(seatFromPawnId(pawnId))} onClick={() => setDrill({ step: "split-detail", firstPawnId: pawnId })}>
               <span className="pawn-chip">{pawnShortLabel(pawnId)}</span>
               <span>Choose →</span>
             </button>
@@ -140,15 +157,15 @@ export function GameScreen(props: {
   if (drill.step === "split-detail") {
     const combos = splitOptions.filter((m) => m.kind === "split" && m.firstPawnId === drill.firstPawnId);
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display">{info.label}</div>
+        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
         <div className="card-blurb">Choose how far {pawnShortLabel(drill.firstPawnId)} moves.</div>
         <div className="move-list">
           {combos.map((m, i) =>
             m.kind === "split" ? (
-              <button key={i} className="move-option" onClick={() => choose(m)}>
+              <button key={i} className="move-option" style={seatButtonStyle(seatFromPawnId(drill.firstPawnId))} onClick={() => choose(m)}>
                 <span className="pawn-chip">{m.firstDistance} spaces</span>
                 <span>
                   then {pawnShortLabel(m.secondPawnId)} +{m.secondDistance}
@@ -170,15 +187,19 @@ export function GameScreen(props: {
     if (drill.step === "pair-opponent") {
       const choices = pairOptions.filter((m) => "ownPawnId" in m && m.ownPawnId === drill.ownPawnId);
       return (
-        <div className="screen">
+        <div className="screen game-screen">
           <HeaderBar publicState={publicState} />
           {board}
-          <div className="card-display">{info.label}</div>
-          <div className="card-blurb">Choose the opponent pawn.</div>
+          <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+          <div className="card-blurb">
+            {info.blurb}
+            <br />
+            Choose the opponent pawn.
+          </div>
           <div className="move-list">
             {choices.map((m, i) =>
               "opponentPawnId" in m ? (
-                <button key={i} className="move-option" onClick={() => choose(m)}>
+                <button key={i} className="move-option" style={seatButtonStyle(seatFromPawnId(m.opponentPawnId))} onClick={() => choose(m)}>
                   <span className="pawn-chip">{pawnShortLabel(m.opponentPawnId)}</span>
                   <span>{activeCard === "BUMP" ? "Bump!" : "Swap"}</span>
                 </button>
@@ -193,14 +214,18 @@ export function GameScreen(props: {
     }
     const ownPawns = [...new Set(pairOptions.map((m) => ("ownPawnId" in m ? m.ownPawnId : "")))];
     return (
-      <div className="screen">
+      <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display">{info.label}</div>
-        <div className="card-blurb">{activeCard === "BUMP" ? "Choose your pawn in Start." : "Choose your pawn."}</div>
+        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-blurb">
+          {info.blurb}
+          <br />
+          {activeCard === "BUMP" ? "Choose your pawn in Start." : "Choose your pawn."}
+        </div>
         <div className="move-list">
           {ownPawns.map((pawnId) => (
-            <button key={pawnId} className="move-option" onClick={() => setDrill({ step: "pair-opponent", ownPawnId: pawnId })}>
+            <button key={pawnId} className="move-option" style={seatButtonStyle(seatFromPawnId(pawnId))} onClick={() => setDrill({ step: "pair-opponent", ownPawnId: pawnId })}>
               <span className="pawn-chip">{pawnShortLabel(pawnId)}</span>
               <span>Choose →</span>
             </button>
@@ -217,17 +242,15 @@ export function GameScreen(props: {
 
   // --- plain forward/backward/enterFromStart list (default view) ---
   return (
-    <div className="screen">
+    <div className="screen game-screen">
       <HeaderBar publicState={publicState} />
       {board}
-      <div className="card-display">{info.label}</div>
+      <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
       <div className="card-blurb">{info.blurb}</div>
       <div className="move-list">
         {simpleOptions.map((m, i) => (
-          <button key={i} className="move-option" onClick={() => choose(m)}>
-            <span className="pawn-chip">
-              {m.kind === "enterFromStart" ? pawnShortLabel(m.pawnId) : pawnShortLabel(m.pawnId)}
-            </span>
+          <button key={i} className="move-option" style={seatButtonStyle(seatFromPawnId(m.pawnId))} onClick={() => choose(m)}>
+            <span className="pawn-chip">{pawnShortLabel(m.pawnId)}</span>
             <span>
               {m.kind === "enterFromStart" && "Leave Start"}
               {m.kind === "forward" && `Forward ${m.distance}`}
@@ -236,13 +259,13 @@ export function GameScreen(props: {
           </button>
         ))}
         {splitOptions.length > 0 && (
-          <button className="move-option" onClick={() => setDrill({ step: "split-pawn" })}>
+          <button className="move-option" style={current ? seatButtonStyle(current.seat) : undefined} onClick={() => setDrill({ step: "split-pawn" })}>
             <span className="pawn-chip">Split move</span>
             <span>Choose →</span>
           </button>
         )}
         {pairOptions.length > 0 && (
-          <button className="move-option" onClick={() => setDrill({ step: "pair-own" })}>
+          <button className="move-option" style={current ? seatButtonStyle(current.seat) : undefined} onClick={() => setDrill({ step: "pair-own" })}>
             <span className="pawn-chip">{activeCard === "BUMP" ? "BUMP!" : "Swap"}</span>
             <span>Choose →</span>
           </button>
