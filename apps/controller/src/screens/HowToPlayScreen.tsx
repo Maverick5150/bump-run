@@ -1,6 +1,6 @@
 import { CARD_LABELS } from "@bump-run/shared-types";
 import type { CardType } from "@bump-run/shared-types";
-import { CardArt } from "../components/CardArt.js";
+import { cardImageSrc } from "../lib/cardArt.js";
 
 const CARD_ORDER: CardType[] = ["CARD_1", "CARD_2", "CARD_3", "CARD_4", "CARD_5", "CARD_7", "CARD_8", "CARD_10", "CARD_11", "CARD_12", "BUMP"];
 
@@ -39,7 +39,7 @@ export function HowToPlayScreen(props: { onClose: () => void }) {
           {CARD_ORDER.map((type) => (
             <div className="card-ref-row" key={type}>
               <div className="card-ref-icon">
-                <CardArt type={type} />
+                <img src={cardImageSrc(type)} alt={CARD_LABELS[type].label} />
               </div>
               <div className="card-ref-text">
                 <div className="card-ref-label">{CARD_LABELS[type].label}</div>

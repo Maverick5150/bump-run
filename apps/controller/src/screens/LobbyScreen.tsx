@@ -39,7 +39,7 @@ export function LobbyScreen(props: {
   const canStart = readyCount >= 1 && readyCount + botSeats.length >= 2;
 
   return (
-    <div className="screen">
+    <div className="screen screen-lobby">
       <div className="logo" style={{ fontSize: "1.6rem" }}>
         BUMP<span className="accent"> RUN</span>
       </div>

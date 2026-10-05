@@ -15,7 +15,7 @@ export function JoinScreen(props: {
   const canJoin = roomCode.trim().length >= 4;
 
   return (
-    <div className="screen">
+    <div className="screen screen-title">
       <div className="corner-controls">
         <button className="icon-btn" aria-label="How to play" onClick={props.onShowHowToPlay}>
           ?

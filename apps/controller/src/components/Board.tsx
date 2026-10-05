@@ -7,8 +7,16 @@ const SIZE = 320;
 const CENTER: Point = { x: SIZE / 2, y: SIZE / 2 };
 const BOARD_HALF = SIZE * 0.33;
 const TRACK_BOX = SIZE * 0.042;
-/** Scales the hand-drawn pawn silhouette (authored in its own ~22x16 unit coordinate space) to a bold, clearly visible size on the board. */
+/** Scales the pawn artwork (square 600x600 source canvas) to a bold, clearly visible size on the board. */
 const PAWN_SCALE = 1.3;
+
+const PAWN_IMAGE: Record<SeatColor, string> = {
+  red: "/art/pawns/pawn_red.png",
+  blue: "/art/pawns/pawn_blue.png",
+  green: "/art/pawns/pawn_green.png",
+  yellow: "/art/pawns/pawn_yellow.png",
+};
+const BOARD_FRAME_IMAGE = "/art/board/board_frame.png";
 
 function locationKey(loc: PawnLocation): string {
   if (loc.zone === "main") return `main:${loc.pos}`;
@@ -159,12 +167,6 @@ export function Board(props: { publicState: PublicGameState }) {
           <stop offset="60%" stopColor="#1b1830" />
           <stop offset="100%" stopColor="#14121f" />
         </radialGradient>
-        {SEAT_ORDER.map((seat) => (
-          <radialGradient key={seat} id={`pawnGrad-${seat}`} cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#ffffff" stopOpacity={0.55} />
-            <stop offset="35%" stopColor={SEAT_INFO[seat].hex} stopOpacity={0} />
-          </radialGradient>
-        ))}
       </defs>
 
       <circle cx={CENTER.x} cy={CENTER.y} r={SIZE * 0.5} fill="url(#boardGlow)" />
@@ -295,28 +297,19 @@ export function Board(props: { publicState: PublicGameState }) {
         return (
           <g key={p.id} transform={`translate(${p.x} ${p.y}) scale(${p.scale})`} style={{ transition: "opacity 200ms" }}>
             {p.isCurrent && <circle r={SIZE * 0.05} fill={hex} opacity={0.3} />}
-            <ellipse cx={0} cy={9 * s} rx={9 * s} ry={3 * s} fill="#000" opacity={0.38} />
-            <path
-              d={`M ${-6 * s} ${1 * s} C ${-8 * s} ${4 * s} ${-8 * s} ${7 * s} ${-8 * s} ${8 * s}
-                  L ${8 * s} ${8 * s} C ${8 * s} ${7 * s} ${8 * s} ${4 * s} ${6 * s} ${1 * s}
-                  C ${7 * s} ${-3 * s} ${4 * s} ${-6 * s} 0 ${-6 * s}
-                  C ${-4 * s} ${-6 * s} ${-7 * s} ${-3 * s} ${-6 * s} ${1 * s} Z`}
-              fill={hex}
-              stroke="#ffffff"
-              strokeOpacity={0.55}
-              strokeWidth={0.6 * s}
-            />
-            <circle cx={0} cy={-9 * s} r={5.2 * s} fill={hex} stroke="#ffffff" strokeOpacity={0.7} strokeWidth={0.6 * s} />
-            <circle cx={0} cy={-9 * s} r={5.2 * s} fill={`url(#pawnGrad-${p.seat})`} />
-            <ellipse cx={-1.7 * s} cy={-10.6 * s} rx={1.9 * s} ry={1.3 * s} fill="#ffffff" opacity={0.55} />
+            <ellipse cx={0} cy={9 * s} rx={8 * s} ry={2.6 * s} fill="#000" opacity={0.38} />
+            <image href={PAWN_IMAGE[p.seat]} x={-9 * s} y={-16 * s} width={18 * s} height={18 * s} style={{ pointerEvents: "none" }} />
             <text
               textAnchor="middle"
               dominantBaseline="central"
               x={0}
-              y={-8.9 * s}
-              fontSize={6.2 * s}
+              y={-10.5 * s}
+              fontSize={5.6 * s}
               fontWeight={800}
               fill="#ffffff"
+              stroke="#000000"
+              strokeWidth={0.5 * s}
+              paintOrder="stroke"
               style={{ pointerEvents: "none" }}
             >
               {p.number}
@@ -324,6 +317,15 @@ export function Board(props: { publicState: PublicGameState }) {
           </g>
         );
       })}
+
+      <image
+        href={BOARD_FRAME_IMAGE}
+        x={boardLeft - TRACK_BOX * 0.65}
+        y={boardTop - TRACK_BOX * 0.65}
+        width={boardSide + TRACK_BOX * 1.3}
+        height={boardSide + TRACK_BOX * 1.3}
+        style={{ pointerEvents: "none" }}
+      />
     </svg>
   );
 }

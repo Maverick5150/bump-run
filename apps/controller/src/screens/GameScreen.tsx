@@ -2,7 +2,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 import type { CardType, MoveOption, PublicGameState, SeatColor } from "@bump-run/shared-types";
 import { CARD_LABELS } from "@bump-run/shared-types";
 import { Board } from "../components/Board.js";
-import { CardArt } from "../components/CardArt.js";
+import { CARD_BACK_IMAGE, cardImageSrc } from "../lib/cardArt.js";
 import { SEAT_INFO } from "../lib/seats.js";
 import { getSettings } from "../lib/settings.js";
 import { sounds } from "../lib/sound.js";
@@ -100,15 +100,18 @@ export function GameScreen(props: {
         <HeaderBar publicState={publicState} />
         {board}
         <div className="status-banner active">Your turn!</div>
-        <button
-          className="btn-draw"
-          onClick={() => {
-            vibrate(30);
-            props.onDraw();
-          }}
-        >
-          DRAW
-        </button>
+        <div className="draw-row">
+          <img className="card-back-peek" src={CARD_BACK_IMAGE} alt="" />
+          <button
+            className="btn-draw"
+            onClick={() => {
+              vibrate(30);
+              props.onDraw();
+            }}
+          >
+            DRAW
+          </button>
+        </div>
       </div>
     );
   }
@@ -120,7 +123,7 @@ export function GameScreen(props: {
       <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
         <div className="card-blurb">No legal moves with this card. Pass and continue.</div>
         <button className="btn-primary" onClick={() => choose({ kind: "pass" })}>
           Pass
@@ -136,7 +139,7 @@ export function GameScreen(props: {
       <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
         <div className="card-blurb">
           {info.blurb}
           <br />
@@ -160,7 +163,7 @@ export function GameScreen(props: {
       <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
         <div className="card-blurb">Choose how far {pawnShortLabel(drill.firstPawnId)} moves.</div>
         <div className="move-list">
           {combos.map((m, i) =>
@@ -190,7 +193,7 @@ export function GameScreen(props: {
         <div className="screen game-screen">
           <HeaderBar publicState={publicState} />
           {board}
-          <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+          <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
           <div className="card-blurb">
             {info.blurb}
             <br />
@@ -217,7 +220,7 @@ export function GameScreen(props: {
       <div className="screen game-screen">
         <HeaderBar publicState={publicState} />
         {board}
-        <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+        <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
         <div className="card-blurb">
           {info.blurb}
           <br />
@@ -245,7 +248,7 @@ export function GameScreen(props: {
     <div className="screen game-screen">
       <HeaderBar publicState={publicState} />
       {board}
-      <div className="card-display"><CardArt type={activeCard} />{info.label}</div>
+      <div className="card-display"><img src={cardImageSrc(activeCard)} alt={info.label} /></div>
       <div className="card-blurb">{info.blurb}</div>
       <div className="move-list">
         {simpleOptions.map((m, i) => (

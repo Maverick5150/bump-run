@@ -10,7 +10,7 @@ export function WinScreen(props: {
 }) {
   const info = props.winnerSeat ? SEAT_INFO[props.winnerSeat] : null;
   return (
-    <div className="screen">
+    <div className="screen screen-win">
       <div className="logo">
         BUMP<span className="accent"> RUN</span>
       </div>
