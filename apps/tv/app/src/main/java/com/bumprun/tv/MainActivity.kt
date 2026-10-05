@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         object : ViewModelProvider.Factory {
             override fun <T : androidx.lifecycle.ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
                 @Suppress("UNCHECKED_CAST")
-                return AppViewModel(settings) as T
+                return AppViewModel(applicationContext, settings) as T
             }
         }
     }
@@ -70,7 +70,11 @@ private fun AppRoot(vm: AppViewModel) {
             }
             Screen.SETTINGS -> {
                 BackHandler { vm.goTo(Screen.TITLE) }
-                SettingsScreen(settings = vm.settings, onBack = { vm.goTo(Screen.TITLE) })
+                SettingsScreen(
+                    settings = vm.settings,
+                    onBack = { vm.goTo(Screen.TITLE) },
+                    onSettingsChanged = { vm.sound.applySettings() },
+                )
             }
             Screen.LOBBY -> {
                 BackHandler { vm.returnToMainMenu() }

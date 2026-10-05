@@ -1,5 +1,6 @@
 package com.bumprun.tv.ui
 
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,15 +8,22 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bumprun.tv.ui.theme.BumpAccent
 import com.bumprun.tv.ui.theme.BumpAccent2
 import com.bumprun.tv.ui.theme.BumpTextDim
+import kotlinx.coroutines.launch
 
 private data class RuleSection(val heading: String, val points: List<String>)
 
@@ -77,14 +85,39 @@ fun HowToPlayScreen(onBack: () -> Unit) {
     val backFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { backFocus.requestFocus() }
 
+    val scrollState = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    // Fire TV remotes send DPAD key events, not drag/touch gestures, so
+    // Modifier.verticalScroll never actually moves on its own -- the BACK
+    // button is the only focusable element on this screen the whole time,
+    // and DPAD up/down here manually drives the scroll instead of focus
+    // traversal (there's nothing else to traverse to).
+    val scrollStep = 220f
+
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 64.dp, vertical = 40.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 64.dp, vertical = 40.dp)
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                when (event.key) {
+                    Key.DirectionDown -> {
+                        scope.launch { scrollState.animateScrollBy(scrollStep) }
+                        true
+                    }
+                    Key.DirectionUp -> {
+                        scope.launch { scrollState.animateScrollBy(-scrollStep) }
+                        true
+                    }
+                    else -> false
+                }
+            },
         horizontalAlignment = Alignment.Start,
     ) {
         Text("HOW TO PLAY", fontSize = 40.sp, fontWeight = FontWeight.Black, color = BumpAccent)
         Spacer(Modifier.height(20.dp))
         Column(
-            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            modifier = Modifier.weight(1f).verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             SECTIONS.forEach { section ->

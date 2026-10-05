@@ -1,5 +1,6 @@
 package com.bumprun.tv
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bumprun.tv.audio.SoundEngine
@@ -11,9 +12,9 @@ import kotlinx.coroutines.launch
 
 enum class Screen { TITLE, HOW_TO_PLAY, SETTINGS, LOBBY, GAME, WIN }
 
-class AppViewModel(val settings: Settings) : ViewModel() {
+class AppViewModel(appContext: Context, val settings: Settings) : ViewModel() {
     val socket = SocketManager()
-    val sound = SoundEngine(settings)
+    val sound = SoundEngine(appContext, settings)
 
     private val _screen = MutableStateFlow(Screen.TITLE)
     val screen: StateFlow<Screen> = _screen
@@ -25,6 +26,7 @@ class AppViewModel(val settings: Settings) : ViewModel() {
     private var lastHandledEventIdentity: Any? = null
 
     init {
+        sound.startMusic()
         viewModelScope.launch {
             socket.lastEvent.collect { event ->
                 if (event == null || event === lastHandledEventIdentity) return@collect
