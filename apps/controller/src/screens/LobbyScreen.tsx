@@ -1,15 +1,29 @@
+import { useEffect, useState } from "react";
 import type { RoomStatePayload, SeatColor } from "@bump-run/shared-types";
 import { ALL_SEATS, SEAT_INFO } from "../lib/seats.js";
 
 export function LobbyScreen(props: {
   room: RoomStatePayload | null;
   playerId: string | null;
+  isHost: boolean;
   onSelectColor: (seat: SeatColor) => void;
   onSetReady: (ready: boolean) => void;
+  onStartGame: (botSeats: SeatColor[]) => void;
 }) {
-  const { room, playerId } = props;
+  const { room, playerId, isHost } = props;
   const me = room?.players.find((p) => p.playerId === playerId) ?? null;
   const takenSeats = new Set(room?.players.filter((p) => p.playerId !== playerId).map((p) => p.seat) ?? []);
+  const openSeats = ALL_SEATS.filter((s) => s !== me?.seat && !takenSeats.has(s));
+
+  const [aiCount, setAiCount] = useState(0);
+  useEffect(() => {
+    setAiCount((c) => Math.min(c, openSeats.length));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only clamp when the number of open seats shrinks
+  }, [openSeats.length]);
+
+  const botSeats = openSeats.slice(0, aiCount);
+  const readyCount = room?.players.filter((p) => p.ready && p.seat).length ?? 0;
+  const canStart = readyCount >= 1 && readyCount + botSeats.length >= 2;
 
   return (
     <div className="screen">
@@ -17,6 +31,7 @@ export function LobbyScreen(props: {
         BUMP<span className="accent"> RUN</span>
       </div>
       <div className="room-code">{room?.room.roomCode ?? "----"}</div>
+      {isHost && <div className="card-blurb">Share this code with friends, or just add AI below.</div>}
 
       <div className="seat-grid">
         {ALL_SEATS.map((seat) => {
@@ -53,6 +68,16 @@ export function LobbyScreen(props: {
             </div>
           );
         })}
+        {botSeats.map((seat) => {
+          const info = SEAT_INFO[seat];
+          return (
+            <div className="player-row" key={seat}>
+              <span className="player-dot" style={{ background: info.hex }} />
+              <span className="player-name">AI {info.label}</span>
+              <span className="player-ready">🤖</span>
+            </div>
+          );
+        })}
       </div>
 
       <button
@@ -62,7 +87,36 @@ export function LobbyScreen(props: {
       >
         {me?.ready ? "Not Ready" : "I'm Ready"}
       </button>
-      <div className="status-banner">Waiting for the TV host to start the game…</div>
+
+      {isHost ? (
+        <>
+          {openSeats.length > 0 && (
+            <div className="ai-stepper">
+              <span>AI players</span>
+              <button
+                className="stepper-btn"
+                disabled={aiCount <= 0}
+                onClick={() => setAiCount((c) => Math.max(0, c - 1))}
+              >
+                −
+              </button>
+              <span className="stepper-count">{aiCount}</span>
+              <button
+                className="stepper-btn"
+                disabled={aiCount >= openSeats.length}
+                onClick={() => setAiCount((c) => Math.min(openSeats.length, c + 1))}
+              >
+                +
+              </button>
+            </div>
+          )}
+          <button className="btn-primary" disabled={!canStart} onClick={() => props.onStartGame(botSeats)}>
+            {canStart ? "Start Game" : "Ready up or add AI"}
+          </button>
+        </>
+      ) : (
+        <div className="status-banner">Waiting for the host to start the game…</div>
+      )}
     </div>
   );
 }

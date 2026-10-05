@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { CardType, MoveOption, PublicGameState } from "@bump-run/shared-types";
 import { CARD_LABELS } from "@bump-run/shared-types";
+import { Board } from "../components/Board.js";
 import { SEAT_INFO } from "../lib/seats.js";
 
 function vibrate(pattern: number | number[]) {
@@ -35,6 +36,7 @@ export function GameScreen(props: {
 }) {
   const { publicState, playerId, legalMoves } = props;
   const [drill, setDrill] = useState<Drill>({ step: "none" });
+  const board = <Board publicState={publicState} />;
 
   const current = publicState.players[publicState.currentPlayerIndex];
   const isMyTurn = current?.playerId === playerId;
@@ -60,6 +62,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="status-banner">
           {seatInfo ? (
             <>
@@ -78,6 +81,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="status-banner active">Your turn!</div>
         <button
           className="btn-draw"
@@ -98,6 +102,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="card-display">{info.label}</div>
         <div className="card-blurb">No legal moves with this card. Pass and continue.</div>
         <button className="btn-primary" onClick={() => choose({ kind: "pass" })}>
@@ -113,6 +118,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="card-display">{info.label}</div>
         <div className="card-blurb">Split move: choose the first pawn to move.</div>
         <div className="move-list">
@@ -132,6 +138,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="card-display">{info.label}</div>
         <div className="card-blurb">Choose how far {pawnShortLabel(drill.firstPawnId)} moves.</div>
         <div className="move-list">
@@ -161,6 +168,7 @@ export function GameScreen(props: {
       return (
         <div className="screen">
           <HeaderBar publicState={publicState} />
+          {board}
           <div className="card-display">{info.label}</div>
           <div className="card-blurb">Choose the opponent pawn.</div>
           <div className="move-list">
@@ -183,6 +191,7 @@ export function GameScreen(props: {
     return (
       <div className="screen">
         <HeaderBar publicState={publicState} />
+        {board}
         <div className="card-display">{info.label}</div>
         <div className="card-blurb">{activeCard === "BUMP" ? "Choose your pawn in Start." : "Choose your pawn."}</div>
         <div className="move-list">
@@ -206,6 +215,7 @@ export function GameScreen(props: {
   return (
     <div className="screen">
       <HeaderBar publicState={publicState} />
+      {board}
       <div className="card-display">{info.label}</div>
       <div className="card-blurb">{info.blurb}</div>
       <div className="move-list">

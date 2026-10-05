@@ -11,14 +11,23 @@ export function App() {
     <>
       {game.status === "disconnected" && <div className="disconnected-banner">Connection lost. Reconnecting…</div>}
 
-      {game.phase === "needsJoin" && <JoinScreen joinError={game.joinError} onJoin={game.join} />}
+      {game.phase === "needsJoin" && (
+        <JoinScreen
+          joinError={game.joinError}
+          onJoin={game.join}
+          onStartSolo={game.startSolo}
+          onHostRoom={game.hostRoom}
+        />
+      )}
 
       {game.phase === "lobby" && (
         <LobbyScreen
           room={game.room}
           playerId={game.playerId}
+          isHost={game.isHost}
           onSelectColor={game.selectColor}
           onSetReady={game.setReady}
+          onStartGame={game.startGameAsHost}
         />
       )}
 
@@ -33,7 +42,14 @@ export function App() {
         />
       )}
 
-      {game.phase === "gameOver" && <WinScreen winnerSeat={game.winnerSeat} myNickname={game.nickname} />}
+      {game.phase === "gameOver" && (
+        <WinScreen
+          winnerSeat={game.winnerSeat}
+          myNickname={game.nickname}
+          isHost={game.isHost}
+          onPlayAgain={game.playAgainAsHost}
+        />
+      )}
     </>
   );
 }
