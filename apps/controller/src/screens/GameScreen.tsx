@@ -3,6 +3,7 @@ import type { CardType, MoveOption, PublicGameState } from "@bump-run/shared-typ
 import { CARD_LABELS } from "@bump-run/shared-types";
 import { Board } from "../components/Board.js";
 import { SEAT_INFO } from "../lib/seats.js";
+import { sounds } from "../lib/sound.js";
 
 function vibrate(pattern: number | number[]) {
   if ("vibrate" in navigator) {
@@ -53,6 +54,7 @@ export function GameScreen(props: {
 
   function choose(move: MoveOption) {
     vibrate(20);
+    sounds.moveTick();
     setDrill({ step: "none" });
     props.onChooseMove(move);
   }

@@ -8,10 +8,22 @@ import type {
 } from "@bump-run/shared-types";
 import { getHostSocket, getSocket, type AppSocket } from "../lib/socket.js";
 import { ALL_SEATS } from "../lib/seats.js";
+import { sounds } from "../lib/sound.js";
 import { clearSession, loadSession, saveSession } from "../lib/storage.js";
 
 export type ConnectionStatus = "connecting" | "connected" | "disconnected";
 export type AppPhase = "needsJoin" | "lobby" | "playing" | "gameOver";
+
+export interface BumpEvent {
+  seat: SeatColor;
+  pawnId: string;
+  nonce: number;
+}
+
+export interface BoostEvent {
+  laneId: string;
+  nonce: number;
+}
 
 export interface GameSocketState {
   status: ConnectionStatus;
@@ -25,6 +37,8 @@ export interface GameSocketState {
   publicState: PublicGameState | null;
   legalMoves: MoveOption[];
   lastCardDrawn: string | null;
+  bumpEvent: BumpEvent | null;
+  boostEvent: BoostEvent | null;
   winnerSeat: SeatColor | null;
   join: (roomCode: string, nickname: string) => void;
   startSolo: (nickname: string, botCount: number) => void;
@@ -84,8 +98,36 @@ export function useGameSocket(): GameSocketState {
   const [publicState, setPublicState] = useState<PublicGameState | null>(null);
   const [legalMoves, setLegalMoves] = useState<MoveOption[]>([]);
   const [lastCardDrawn, setLastCardDrawn] = useState<string | null>(null);
+  const [bumpEvent, setBumpEvent] = useState<BumpEvent | null>(null);
+  const [boostEvent, setBoostEvent] = useState<BoostEvent | null>(null);
   const [winnerSeat, setWinnerSeat] = useState<SeatColor | null>(null);
   const attemptedAutoReconnect = useRef(false);
+  const wasMyTurn = useRef(false);
+  const playerIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    playerIdRef.current = playerId;
+  }, [playerId]);
+
+  function checkYourTurn(state: PublicGameState) {
+    const current = state.players[state.currentPlayerIndex];
+    const isMyTurn = current?.playerId === playerIdRef.current;
+    if (isMyTurn && !wasMyTurn.current) sounds.yourTurn();
+    wasMyTurn.current = isMyTurn;
+  }
+
+  const homeStatus = useRef<Map<string, boolean>>(new Map());
+  function checkHomeArrivals(state: PublicGameState) {
+    let anyNewlyHome = false;
+    for (const player of state.players) {
+      for (const pawn of player.pawns) {
+        const isHomeNow = pawn.location.zone === "home";
+        const wasHome = homeStatus.current.get(pawn.id) ?? false;
+        if (isHomeNow && !wasHome) anyNewlyHome = true;
+        homeStatus.current.set(pawn.id, isHomeNow);
+      }
+    }
+    if (anyNewlyHome) sounds.home();
+  }
 
   useEffect(() => {
     function onConnect() {
@@ -108,6 +150,9 @@ export function useGameSocket(): GameSocketState {
       setLastCardDrawn(null);
       setWinnerSeat(null);
       setPhase("playing");
+      wasMyTurn.current = false;
+      homeStatus.current.clear();
+      checkYourTurn(payload.state);
     }
     function onPublicState(payload: { state: PublicGameState }) {
       setPublicState(payload.state);
@@ -117,14 +162,26 @@ export function useGameSocket(): GameSocketState {
     }
     function onCardDrawn(payload: { card: string }) {
       setLastCardDrawn(payload.card);
+      sounds.cardDraw();
+    }
+    function onBumped(payload: { seat: SeatColor; pawnId: string }) {
+      setBumpEvent({ ...payload, nonce: Date.now() + Math.random() });
+      sounds.bump();
+    }
+    function onBoostTriggered(payload: { laneId: string }) {
+      setBoostEvent({ ...payload, nonce: Date.now() + Math.random() });
+      sounds.boost();
     }
     function onMoveResolved(payload: { state: PublicGameState }) {
       setPublicState(payload.state);
       setLegalMoves([]);
+      checkHomeArrivals(payload.state);
+      checkYourTurn(payload.state);
     }
     function onWon(payload: { seat: SeatColor }) {
       setWinnerSeat(payload.seat);
       setPhase("gameOver");
+      sounds.win();
     }
     function onError(payload: { code: string; message: string }) {
       if (payload.code === "INVALID_TOKEN" || payload.code === "ROOM_NOT_FOUND") {
@@ -141,6 +198,8 @@ export function useGameSocket(): GameSocketState {
     socket.on("game:publicState", onPublicState);
     socket.on("game:privateState", onPrivateState);
     socket.on("turn:cardDrawn", onCardDrawn);
+    socket.on("player:bumped", onBumped);
+    socket.on("boost:triggered", onBoostTriggered);
     socket.on("move:resolved", onMoveResolved);
     socket.on("game:won", onWon);
     socket.on("room:error", onError);
@@ -155,6 +214,8 @@ export function useGameSocket(): GameSocketState {
       socket.off("game:publicState", onPublicState);
       socket.off("game:privateState", onPrivateState);
       socket.off("turn:cardDrawn", onCardDrawn);
+      socket.off("player:bumped", onBumped);
+      socket.off("boost:triggered", onBoostTriggered);
       socket.off("move:resolved", onMoveResolved);
       socket.off("game:won", onWon);
       socket.off("room:error", onError);
@@ -299,6 +360,8 @@ export function useGameSocket(): GameSocketState {
     publicState,
     legalMoves,
     lastCardDrawn,
+    bumpEvent,
+    boostEvent,
     winnerSeat,
     join,
     startSolo,

@@ -43,8 +43,8 @@ export class BoardGeometry {
     private readonly center: Point,
     private readonly trackRadius: number,
   ) {
-    this.safeSpan = trackRadius * 0.62;
-    this.homeRadius = trackRadius * 0.18;
+    this.safeSpan = trackRadius * 0.6;
+    this.homeRadius = trackRadius * 0.32;
   }
 
   private angleForMainPos(pos: number): number {
