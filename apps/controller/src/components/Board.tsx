@@ -19,14 +19,15 @@ const PAWN_IMAGE: Record<SeatColor, string> = {
 const BOARD_FRAME_IMAGE = "/art/board/board_frame.png";
 
 /**
- * How far to rotate the whole board so the CURRENT seat's own corner (and
- * Start pad) always ends up pointing toward the bottom of the screen --
- * same idea as turning a physical board to face whoever's turn it is.
- * Each seat's corner sits 90 degrees from the next, so these are exactly
- * 90 degrees apart; the values are "how much extra clockwise rotation
- * brings that corner from its resting angle to the bottom."
+ * How far to rotate the whole board so the CURRENT seat's own SIDE of the
+ * square -- not just their corner -- ends up facing the bottom of the
+ * screen, same idea as turning a physical board to face whoever's turn it
+ * is. Rotating to a corner would need an off-90-degree angle, which turns
+ * a square into a diamond mid-animation; rotating a full side down only
+ * ever needs 0/90/180/270, so the board silhouette always stays a proper
+ * square, in sync with the (also square) frame art around it.
  */
-const ROTATION_FOR_SEAT: Record<SeatColor, number> = { red: 225, blue: 135, green: 45, yellow: 315 };
+const ROTATION_FOR_SEAT: Record<SeatColor, number> = { red: 180, blue: 90, green: 0, yellow: 270 };
 
 function rotatePoint(p: Point, angleDeg: number, center: Point): Point {
   const rad = (angleDeg * Math.PI) / 180;
@@ -398,6 +399,15 @@ export function Board(props: { publicState: PublicGameState }) {
           </g>
         );
       })}
+
+      <image
+        href={BOARD_FRAME_IMAGE}
+        x={boardLeft - TRACK_BOX * 0.65}
+        y={boardTop - TRACK_BOX * 0.65}
+        width={boardSide + TRACK_BOX * 1.3}
+        height={boardSide + TRACK_BOX * 1.3}
+        style={{ pointerEvents: "none" }}
+      />
       </g>
 
       {drawn.map((p) => {
@@ -426,15 +436,6 @@ export function Board(props: { publicState: PublicGameState }) {
           </g>
         );
       })}
-
-      <image
-        href={BOARD_FRAME_IMAGE}
-        x={boardLeft - TRACK_BOX * 0.65}
-        y={boardTop - TRACK_BOX * 0.65}
-        width={boardSide + TRACK_BOX * 1.3}
-        height={boardSide + TRACK_BOX * 1.3}
-        style={{ pointerEvents: "none" }}
-      />
     </svg>
   );
 }
