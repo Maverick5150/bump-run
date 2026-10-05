@@ -40,20 +40,6 @@ export interface Point {
   y: number;
 }
 
-/**
- * Direction (unit vector) from board center toward each seat's OWN side --
- * their safety lane runs along this line, from that side's midpoint
- * (outer) in to a home pocket near center (inner). Red owns the top side
- * (small y), so "toward red's side" from center is upward (0,-1); blue
- * owns the right side, "toward blue's side" is rightward (1,0); etc.
- */
-const SEAT_DIR: Record<SeatColor, Point> = {
-  red: { x: 0, y: -1 },
-  blue: { x: 1, y: 0 },
-  green: { x: 0, y: 1 },
-  yellow: { x: -1, y: 0 },
-};
-
 /** Outward diagonal direction from each seat's entry corner, for placing their Start pad just outside the board. */
 const SEAT_CORNER_OUT: Record<SeatColor, Point> = {
   red: { x: -1, y: -1 },
@@ -69,7 +55,6 @@ function norm(p: Point): Point {
 
 export class BoardGeometry {
   private readonly corners: Point[]; // TL, TR, BR, BL, TL (closed loop)
-  private readonly safeOuterDist: number;
   private readonly homeDist: number;
 
   constructor(
@@ -83,7 +68,6 @@ export class BoardGeometry {
     const BR = { x: c.x + h, y: c.y + h };
     const BL = { x: c.x - h, y: c.y + h };
     this.corners = [TL, TR, BR, BL, TL];
-    this.safeOuterDist = h; // every side's midpoint is exactly `half` from center on a square
     this.homeDist = h * 0.208;
   }
 
@@ -96,15 +80,35 @@ export class BoardGeometry {
     return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
   }
 
+  /**
+   * Where this seat's safety lane branches off the main ring -- the space
+   * immediately BEFORE their own entry corner (global position entry-1),
+   * matching the engine's STEPS_ENTRY_TO_SAFE_ENTRANCE: a pawn must travel
+   * almost the entire 52-space lap, arriving via the previous seat's side,
+   * before it's allowed to turn toward home. This sits right next to that
+   * seat's own Start corner, exactly like Sorry!'s safety-zone entrance --
+   * NOT at the midpoint of their own side, which is a different,
+   * unconnected spot on the ring and made pawns visually jump to a
+   * location the rules never actually send them to.
+   */
+  private safetyAnchor(seat: SeatColor): Point {
+    const entry = ENTRY_OFFSET[seat];
+    const prevPos = (entry - 1 + MAIN_TRACK_LENGTH) % MAIN_TRACK_LENGTH;
+    return this.pointOnRing(prevPos);
+  }
+
   safeCellPoint(seat: SeatColor, index: number): Point {
-    const dir = SEAT_DIR[seat];
+    const outer = this.safetyAnchor(seat);
+    const dir = norm({ x: outer.x - this.center.x, y: outer.y - this.center.y });
+    const outerDist = Math.hypot(outer.x - this.center.x, outer.y - this.center.y);
     const t = index / (SAFE_ZONE_LENGTH + 1);
-    const dist = this.safeOuterDist - (this.safeOuterDist - this.homeDist) * t;
+    const dist = outerDist - (outerDist - this.homeDist) * t;
     return { x: this.center.x + dir.x * dist, y: this.center.y + dir.y * dist };
   }
 
   homePoint(seat: SeatColor): Point {
-    const dir = SEAT_DIR[seat];
+    const outer = this.safetyAnchor(seat);
+    const dir = norm({ x: outer.x - this.center.x, y: outer.y - this.center.y });
     return { x: this.center.x + dir.x * this.homeDist, y: this.center.y + dir.y * this.homeDist };
   }
 
