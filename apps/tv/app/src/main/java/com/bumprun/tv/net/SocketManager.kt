@@ -5,9 +5,32 @@ import io.socket.client.Socket
 import io.socket.emitter.Emitter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import okhttp3.Dns
+import okhttp3.OkHttpClient
 import org.json.JSONObject
+import java.net.Inet4Address
+import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 
 enum class ConnectionStatus { DISCONNECTED, CONNECTING, CONNECTED }
+
+/**
+ * Some home/ISP networks hand out a non-functional IPv6 route (present in
+ * DNS, but black-holed or misconfigured) -- Android's dual-stack "happy
+ * eyeballs" is supposed to fall back to IPv4 quickly, but in practice this
+ * can hang or fail outright on some devices/networks well before any
+ * fallback kicks in, while anything resolving IPv4-only (or on a saner
+ * network) connects fine. Since that's indistinguishable from "server is
+ * unreachable" from the app's point of view, and costs nothing when IPv6
+ * isn't actually the problem, just skip IPv6 addresses entirely here.
+ */
+private object Ipv4OnlyDns : Dns {
+    override fun lookup(hostname: String): List<InetAddress> {
+        val all = Dns.SYSTEM.lookup(hostname)
+        val ipv4Only = all.filterIsInstance<Inet4Address>()
+        return ipv4Only.ifEmpty { all }
+    }
+}
 
 /**
  * Thin wrapper around the Socket.IO client implementing the TV's half of
@@ -45,14 +68,25 @@ class SocketManager {
         disconnect()
         serverUrl = url
         status.value = ConnectionStatus.CONNECTING
+        val httpClient = OkHttpClient.Builder()
+            .dns(Ipv4OnlyDns)
+            .connectTimeout(8, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .build()
         val opts = IO.Options().apply {
             reconnection = true
             reconnectionDelay = 500
             reconnectionDelayMax = 4000
+            timeout = 8000
             // Prefer websocket but allow falling back to HTTP long-polling --
             // the server supports both, and some networks interfere with the
             // websocket upgrade specifically while plain HTTPS works fine.
             transports = arrayOf("websocket", "polling")
+            // Route through our own OkHttp client so DNS resolution skips
+            // IPv6 (see Ipv4OnlyDns above) instead of socket.io-client's
+            // default dual-stack behavior.
+            callFactory = httpClient
+            webSocketFactory = httpClient
         }
         val s = try {
             IO.socket(url, opts)

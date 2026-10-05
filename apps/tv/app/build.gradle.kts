@@ -110,6 +110,11 @@ dependencies {
         exclude(group = "org.json", module = "json")
     }
 
+    // Pinned explicitly (already a transitive dep of socket.io-client) so
+    // SocketManager can hand it a custom IPv4-only Dns -- see the comment
+    // there for why.
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Bundles a modern, independent CA trust store + TLS implementation.
     // Budget/old Fire TV Sticks can ship system trust stores that never
     // learned to trust Let's Encrypt's current chain (it stopped
