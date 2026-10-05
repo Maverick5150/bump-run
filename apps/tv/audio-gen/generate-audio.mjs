@@ -171,6 +171,23 @@ function genCardDraw() {
   writeWav("sfx_card.wav", normalize(buf, 0.75));
 }
 
+function genTransition() {
+  const dur = 0.38;
+  const buf = new Float32Array(samples(dur));
+  const rng = makeRng(555);
+  const noise = new Float32Array(buf.length);
+  for (let i = 0; i < noise.length; i++) noise[i] = rng();
+  lowpass(noise, 2200);
+  for (let i = 0; i < buf.length; i++) {
+    const t = i / SR;
+    const env = adsr(t, dur, 0.02, 0.1, 0.3, 0.22);
+    const sweep = 420 + 520 * Math.min(1, t / 0.2);
+    const tone = 0.3 * sine(sweep, t) + 0.18 * sine(sweep * 2, t);
+    buf[i] = env * (tone + 0.35 * noise[i] * adsr(t, dur, 0.02, 0.15, 0.1, 0.2));
+  }
+  writeWav("sfx_transition.wav", normalize(buf, 0.7));
+}
+
 function genMoveTick() {
   const dur = 0.07;
   const buf = new Float32Array(samples(dur));
@@ -341,6 +358,7 @@ function genMusicLoop() {
 // ------------------------------------------------------------------ run --
 
 genSelect();
+genTransition();
 genCardDraw();
 genMoveTick();
 genBump();

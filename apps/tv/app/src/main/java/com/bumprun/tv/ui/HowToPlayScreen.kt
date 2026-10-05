@@ -94,42 +94,45 @@ fun HowToPlayScreen(onBack: () -> Unit) {
     // traversal (there's nothing else to traverse to).
     val scrollStep = 220f
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 64.dp, vertical = 40.dp)
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                when (event.key) {
-                    Key.DirectionDown -> {
-                        scope.launch { scrollState.animateScrollBy(scrollStep) }
-                        true
-                    }
-                    Key.DirectionUp -> {
-                        scope.launch { scrollState.animateScrollBy(-scrollStep) }
-                        true
-                    }
-                    else -> false
-                }
-            },
-        horizontalAlignment = Alignment.Start,
-    ) {
-        Text("HOW TO PLAY", fontSize = 40.sp, fontWeight = FontWeight.Black, color = BumpAccent)
-        Spacer(Modifier.height(20.dp))
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedMenuBackground(intensity = 0.5f)
         Column(
-            modifier = Modifier.weight(1f).verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 64.dp, vertical = 40.dp)
+                .onPreviewKeyEvent { event ->
+                    if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                    when (event.key) {
+                        Key.DirectionDown -> {
+                            scope.launch { scrollState.animateScrollBy(scrollStep) }
+                            true
+                        }
+                        Key.DirectionUp -> {
+                            scope.launch { scrollState.animateScrollBy(-scrollStep) }
+                            true
+                        }
+                        else -> false
+                    }
+                },
+            horizontalAlignment = Alignment.Start,
         ) {
-            SECTIONS.forEach { section ->
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text(section.heading.uppercase(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = BumpAccent2)
-                    section.points.forEach { point ->
-                        Text("•  $point", fontSize = 18.sp, color = BumpTextDim, lineHeight = 25.sp)
+            Text("HOW TO PLAY", fontSize = 40.sp, fontWeight = FontWeight.Black, color = BumpAccent)
+            Spacer(Modifier.height(20.dp))
+            Column(
+                modifier = Modifier.weight(1f).verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                SECTIONS.forEach { section ->
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(section.heading.uppercase(), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = BumpAccent2)
+                        section.points.forEach { point ->
+                            Text("•  $point", fontSize = 18.sp, color = BumpTextDim, lineHeight = 25.sp)
+                        }
                     }
                 }
             }
+            Spacer(Modifier.height(20.dp))
+            TvButton(text = "BACK", onClick = onBack, focusRequester = backFocus)
         }
-        Spacer(Modifier.height(20.dp))
-        TvButton(text = "BACK", onClick = onBack, focusRequester = backFocus)
     }
 }

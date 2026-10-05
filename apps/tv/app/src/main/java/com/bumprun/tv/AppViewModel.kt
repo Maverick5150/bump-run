@@ -51,7 +51,7 @@ class AppViewModel(appContext: Context, val settings: Settings) : ViewModel() {
     }
 
     fun goTo(screen: Screen) {
-        sound.menuSelect()
+        sound.transition()
         _screen.value = screen
     }
 

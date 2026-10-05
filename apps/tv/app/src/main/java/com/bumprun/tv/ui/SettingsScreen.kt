@@ -1,5 +1,9 @@
 package com.bumprun.tv.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -17,9 +21,14 @@ fun SettingsScreen(settings: Settings, onBack: () -> Unit, onSettingsChanged: ()
     var muted by remember { mutableStateOf(settings.muted) }
     var volume by remember { mutableFloatStateOf(settings.volumePercent.toFloat()) }
     var reducedMotion by remember { mutableStateOf(settings.reducedMotion) }
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
 
-    Box(modifier = Modifier.fillMaxSize().padding(64.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(28.dp)) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        AnimatedMenuBackground(intensity = 0.5f)
+        Box(modifier = Modifier.fillMaxSize().padding(64.dp), contentAlignment = Alignment.Center) {
+            AnimatedVisibility(visible = visible, enter = fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 6 }) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(28.dp)) {
             Text("SETTINGS", fontSize = 40.sp, fontWeight = FontWeight.Black, color = BumpAccent)
 
             val fieldWidth = 420.dp
@@ -66,8 +75,10 @@ fun SettingsScreen(settings: Settings, onBack: () -> Unit, onSettingsChanged: ()
                 Switch(checked = reducedMotion, onCheckedChange = { reducedMotion = it; settings.reducedMotion = it })
             }
 
-            Spacer(Modifier.height(8.dp))
-            TvButton(text = "BACK", onClick = onBack, modifier = Modifier.width(fieldWidth))
+                Spacer(Modifier.height(8.dp))
+                TvButton(text = "BACK", onClick = onBack, modifier = Modifier.width(fieldWidth))
+            }
+            }
         }
     }
 }

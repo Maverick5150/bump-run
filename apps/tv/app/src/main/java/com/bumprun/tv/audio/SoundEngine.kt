@@ -30,6 +30,7 @@ class SoundEngine(context: Context, private val settings: Settings) {
     private val loadedIds = HashSet<Int>()
     private val soundIds = mapOf(
         Sfx.SELECT to soundPool.load(appContext, R.raw.sfx_select, 1),
+        Sfx.TRANSITION to soundPool.load(appContext, R.raw.sfx_transition, 1),
         Sfx.CARD to soundPool.load(appContext, R.raw.sfx_card, 1),
         Sfx.MOVE to soundPool.load(appContext, R.raw.sfx_move, 1),
         Sfx.BUMP to soundPool.load(appContext, R.raw.sfx_bump, 1),
@@ -46,7 +47,7 @@ class SoundEngine(context: Context, private val settings: Settings) {
         }
     }
 
-    private enum class Sfx { SELECT, CARD, MOVE, BUMP, BOOST, HOME, WIN }
+    private enum class Sfx { SELECT, TRANSITION, CARD, MOVE, BUMP, BOOST, HOME, WIN }
 
     private fun play(sfx: Sfx) {
         if (settings.muted) return
@@ -57,6 +58,7 @@ class SoundEngine(context: Context, private val settings: Settings) {
     }
 
     fun menuSelect() = play(Sfx.SELECT)
+    fun transition() = play(Sfx.TRANSITION)
     fun cardDraw() = play(Sfx.CARD)
     fun moveTick() = play(Sfx.MOVE)
     fun bump() = play(Sfx.BUMP)

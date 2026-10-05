@@ -1,5 +1,11 @@
 package com.bumprun.tv.ui
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -7,9 +13,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
@@ -29,6 +37,8 @@ fun LobbyScreen(
 ) {
     val roomCode = roomState?.room?.roomCode
 
+    Box(modifier = Modifier.fillMaxSize()) {
+    AnimatedMenuBackground(intensity = 0.45f)
     Row(modifier = Modifier.fillMaxSize().padding(48.dp), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
         // Left: QR + room code + URL, or a clear "can't reach server" state
         Column(
@@ -53,7 +63,20 @@ fun LobbyScreen(
                 Spacer(Modifier.height(8.dp))
                 Text(joinUrl, fontSize = 14.sp, color = BumpTextDim)
             } else {
-                Text("CAN'T REACH SERVER", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = BumpAccent)
+                val pulseTransition = rememberInfiniteTransition(label = "retryPulse")
+                val pulseAlpha by pulseTransition.animateFloat(
+                    initialValue = 0.4f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+                    label = "retryPulseAlpha",
+                )
+                Text(
+                    "CAN'T REACH SERVER",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = BumpAccent,
+                    modifier = Modifier.alpha(pulseAlpha),
+                )
                 Spacer(Modifier.height(16.dp))
                 Text(
                     if (status == ConnectionStatus.CONNECTING) "Connecting…" else "Retrying…",
@@ -69,7 +92,7 @@ fun LobbyScreen(
                 }
                 Spacer(Modifier.height(20.dp))
                 Text(
-                    "Go to SETTINGS and enter the address your computer prints\nwhen you run the server (pnpm run dev:lan).",
+                    "Go to SETTINGS and double-check the server address.\nThis should normally be left as the default.",
                     fontSize = 14.sp,
                     color = BumpTextDim,
                 )
@@ -109,6 +132,7 @@ fun LobbyScreen(
             }
             TvButton(
                 text = if (canStart) "START GAME" else "NEED 2+ READY PLAYERS",
+                icon = if (canStart) "▶" else null,
                 onClick = onStart,
                 enabled = canStart,
                 modifier = Modifier.fillMaxWidth(),
@@ -117,5 +141,6 @@ fun LobbyScreen(
                 focusRequester = startFocus,
             )
         }
+    }
     }
 }

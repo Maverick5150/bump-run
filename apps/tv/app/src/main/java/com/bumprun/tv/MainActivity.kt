@@ -6,6 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -58,47 +63,53 @@ private fun AppRoot(vm: AppViewModel) {
     val gameState by vm.gameState.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        when (screen) {
-            Screen.TITLE -> TitleScreen(
-                onPlay = { vm.startPlay() },
-                onHowToPlay = { vm.goTo(Screen.HOW_TO_PLAY) },
-                onSettings = { vm.goTo(Screen.SETTINGS) },
-            )
-            Screen.HOW_TO_PLAY -> {
-                BackHandler { vm.goTo(Screen.TITLE) }
-                HowToPlayScreen(onBack = { vm.goTo(Screen.TITLE) })
-            }
-            Screen.SETTINGS -> {
-                BackHandler { vm.goTo(Screen.TITLE) }
-                SettingsScreen(
-                    settings = vm.settings,
-                    onBack = { vm.goTo(Screen.TITLE) },
-                    onSettingsChanged = { vm.sound.applySettings() },
+        AnimatedContent(
+            targetState = screen,
+            transitionSpec = { (fadeIn(tween(260)) togetherWith fadeOut(tween(160))) },
+            label = "screenTransition",
+        ) { targetScreen ->
+            when (targetScreen) {
+                Screen.TITLE -> TitleScreen(
+                    onPlay = { vm.startPlay() },
+                    onHowToPlay = { vm.goTo(Screen.HOW_TO_PLAY) },
+                    onSettings = { vm.goTo(Screen.SETTINGS) },
                 )
-            }
-            Screen.LOBBY -> {
-                BackHandler { vm.returnToMainMenu() }
-                LobbyScreen(
-                    serverUrl = vm.settings.serverUrl,
-                    status = status,
-                    roomState = roomState,
-                    onStart = { vm.startGameFromLobby() },
-                )
-            }
-            Screen.GAME -> gameState?.let {
-                GameScreen(gameState = it, roomCode = roomState?.room?.roomCode ?: "----", reducedMotion = vm.settings.reducedMotion)
-            }
-            Screen.WIN -> {
-                BackHandler { vm.returnToMainMenu() }
-                val winnerSeat = gameState?.winnerSeat
-                val winnerName = gameState?.players?.firstOrNull { it.seat == winnerSeat }?.nickname
-                WinScreen(
-                    winnerSeat = winnerSeat,
-                    winnerName = winnerName,
-                    onPlayAgain = { vm.playAgain() },
-                    onNewRoom = { vm.returnToMainMenu(); vm.startPlay() },
-                    onMainMenu = { vm.returnToMainMenu() },
-                )
+                Screen.HOW_TO_PLAY -> {
+                    BackHandler { vm.goTo(Screen.TITLE) }
+                    HowToPlayScreen(onBack = { vm.goTo(Screen.TITLE) })
+                }
+                Screen.SETTINGS -> {
+                    BackHandler { vm.goTo(Screen.TITLE) }
+                    SettingsScreen(
+                        settings = vm.settings,
+                        onBack = { vm.goTo(Screen.TITLE) },
+                        onSettingsChanged = { vm.sound.applySettings() },
+                    )
+                }
+                Screen.LOBBY -> {
+                    BackHandler { vm.returnToMainMenu() }
+                    LobbyScreen(
+                        serverUrl = vm.settings.serverUrl,
+                        status = status,
+                        roomState = roomState,
+                        onStart = { vm.startGameFromLobby() },
+                    )
+                }
+                Screen.GAME -> gameState?.let {
+                    GameScreen(gameState = it, roomCode = roomState?.room?.roomCode ?: "----", reducedMotion = vm.settings.reducedMotion)
+                }
+                Screen.WIN -> {
+                    BackHandler { vm.returnToMainMenu() }
+                    val winnerSeat = gameState?.winnerSeat
+                    val winnerName = gameState?.players?.firstOrNull { it.seat == winnerSeat }?.nickname
+                    WinScreen(
+                        winnerSeat = winnerSeat,
+                        winnerName = winnerName,
+                        onPlayAgain = { vm.playAgain() },
+                        onNewRoom = { vm.returnToMainMenu(); vm.startPlay() },
+                        onMainMenu = { vm.returnToMainMenu() },
+                    )
+                }
             }
         }
 
