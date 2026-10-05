@@ -5,7 +5,8 @@ import { SEAT_INFO } from "../lib/seats.js";
 
 const SIZE = 320;
 const CENTER: Point = { x: SIZE / 2, y: SIZE / 2 };
-const BOARD_HALF = SIZE * 0.3;
+const BOARD_HALF = SIZE * 0.33;
+const TRACK_BOX = SIZE * 0.042;
 
 function locationKey(loc: PawnLocation): string {
   if (loc.zone === "main") return `main:${loc.pos}`;
@@ -43,7 +44,7 @@ function classify(prevZone: string | undefined, nextZone: string): { duration: n
   return { duration: 380, bow: 0.9 }; // ordinary forward/backward/safe-lane advance
 }
 
-const START_SLOT_OFFSET = SIZE * 0.034;
+const START_SLOT_OFFSET = SIZE * 0.038;
 
 /** Clean 2x2 grid of waiting slots inside a seat's start pad -- not a radial jitter, so pawns never overlap. */
 function startSlotPoint(padCenter: Point, index: number): Point {
@@ -148,7 +149,7 @@ export function Board(props: { publicState: PublicGameState }) {
   const ticks = Array.from({ length: MAIN_TRACK_LENGTH }, (_, i) => geometry.pointOnRing(i));
 
   return (
-    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 360, display: "block", margin: "0 auto" }}>
+    <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width="100%" style={{ maxWidth: 440, display: "block", margin: "0 auto" }}>
       <defs>
         <radialGradient id="boardGlow" cx="50%" cy="46%" r="68%">
           <stop offset="0%" stopColor="#2c2750" />
@@ -164,9 +165,28 @@ export function Board(props: { publicState: PublicGameState }) {
       </defs>
 
       <circle cx={CENTER.x} cy={CENTER.y} r={SIZE * 0.5} fill="url(#boardGlow)" />
-      <rect x={boardLeft} y={boardTop} width={boardSide} height={boardSide} rx={SIZE * 0.035} fill="none" stroke="#352f57" strokeWidth={SIZE * 0.034} />
+      <rect
+        x={boardLeft - TRACK_BOX * 0.65}
+        y={boardTop - TRACK_BOX * 0.65}
+        width={boardSide + TRACK_BOX * 1.3}
+        height={boardSide + TRACK_BOX * 1.3}
+        rx={SIZE * 0.03}
+        fill="#1b1830"
+        stroke="#352f57"
+        strokeWidth={2}
+      />
       {ticks.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.0055} fill="#4a4472" />
+        <rect
+          key={i}
+          x={p.x - TRACK_BOX / 2}
+          y={p.y - TRACK_BOX / 2}
+          width={TRACK_BOX}
+          height={TRACK_BOX}
+          rx={SIZE * 0.007}
+          fill="#262240"
+          stroke="#4a4472"
+          strokeWidth={1.2}
+        />
       ))}
 
       {BOOST_LANES.map((lane) => {
@@ -211,7 +231,7 @@ export function Board(props: { publicState: PublicGameState }) {
       {SEAT_ORDER.map((seat) => {
         const hex = SEAT_INFO[seat].hex;
         const padCenter = padCenters.get(seat)!;
-        const padSize = SIZE * 0.17;
+        const padSize = SIZE * 0.2;
         const sockets = [0, 1, 2, 3].map((i) => startSlotPoint(padCenter, i));
         return (
           <g key={seat}>
@@ -220,15 +240,15 @@ export function Board(props: { publicState: PublicGameState }) {
               y={padCenter.y - padSize / 2}
               width={padSize}
               height={padSize}
-              rx={SIZE * 0.022}
+              rx={SIZE * 0.026}
               fill={hex}
-              opacity={0.14}
+              opacity={0.16}
               stroke={hex}
-              strokeOpacity={0.55}
+              strokeOpacity={0.6}
               strokeWidth={1.5}
             />
             {sockets.map((p, i) => (
-              <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.017} fill="#00000030" stroke={hex} strokeOpacity={0.6} strokeWidth={1.2} />
+              <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.027} fill="#00000030" stroke={hex} strokeOpacity={0.6} strokeWidth={1.2} />
             ))}
           </g>
         );
@@ -242,11 +262,23 @@ export function Board(props: { publicState: PublicGameState }) {
         return (
           <g key={seat}>
             {cells.map((p, i) => (
-              <rect key={i} x={p.x - SIZE * 0.014} y={p.y - SIZE * 0.014} width={SIZE * 0.028} height={SIZE * 0.028} rx={SIZE * 0.006} fill={hex} opacity={0.4} />
+              <rect
+                key={i}
+                x={p.x - TRACK_BOX / 2}
+                y={p.y - TRACK_BOX / 2}
+                width={TRACK_BOX}
+                height={TRACK_BOX}
+                rx={SIZE * 0.007}
+                fill={hex}
+                opacity={0.4}
+                stroke={hex}
+                strokeOpacity={0.7}
+                strokeWidth={1}
+              />
             ))}
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.031} fill={hex} opacity={0.22} />
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.022} fill={hex} opacity={0.65} />
-            <circle cx={home.x} cy={home.y} r={SIZE * 0.022} fill="none" stroke={hex} strokeWidth={1.4} opacity={0.9} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.034} fill={hex} opacity={0.2} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.024} fill={hex} opacity={0.65} />
+            <circle cx={home.x} cy={home.y} r={SIZE * 0.024} fill="none" stroke={hex} strokeWidth={1.4} opacity={0.9} />
           </g>
         );
       })}
@@ -256,11 +288,11 @@ export function Board(props: { publicState: PublicGameState }) {
         const glyph = SEAT_INFO[p.seat].glyph;
         return (
           <g key={p.id} transform={`translate(${p.x} ${p.y}) scale(${p.scale})`} style={{ transition: "opacity 200ms" }}>
-            {p.isCurrent && <circle r={SIZE * 0.034} fill={hex} opacity={0.3} />}
-            <circle r={SIZE * 0.026} fill={`url(#pawnGrad-${p.seat})`} />
-            <ellipse cx={0} cy={SIZE * 0.004} rx={SIZE * 0.019} ry={SIZE * 0.008} fill="#000" opacity={0.3} />
-            <circle r={SIZE * 0.019} fill={hex} stroke="#fff" strokeOpacity={0.9} strokeWidth={SIZE * 0.0035} />
-            <text textAnchor="middle" dominantBaseline="central" fontSize={SIZE * 0.017} fill="#00000080" style={{ pointerEvents: "none" }}>
+            {p.isCurrent && <circle r={SIZE * 0.044} fill={hex} opacity={0.32} />}
+            <circle r={SIZE * 0.034} fill={`url(#pawnGrad-${p.seat})`} />
+            <ellipse cx={0} cy={SIZE * 0.006} rx={SIZE * 0.026} ry={SIZE * 0.011} fill="#000" opacity={0.32} />
+            <circle r={SIZE * 0.026} fill={hex} stroke="#fff" strokeOpacity={0.92} strokeWidth={SIZE * 0.0042} />
+            <text textAnchor="middle" dominantBaseline="central" fontSize={SIZE * 0.024} fill="#00000085" style={{ pointerEvents: "none" }}>
               {glyph}
             </text>
           </g>
