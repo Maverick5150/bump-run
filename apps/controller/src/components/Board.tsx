@@ -261,7 +261,22 @@ export function Board(props: { publicState: PublicGameState }) {
         return (
           <g key={lane.id}>
             <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke={hex} strokeOpacity={0.4} strokeWidth={SIZE * 0.034} strokeLinecap="round" />
-            {[0.26, 0.5, 0.74].map((f, i) => {
+            <text
+              x={p0.x + dx * 0.5}
+              y={p0.y + dy * 0.5}
+              transform={`rotate(${(Math.atan2(uy, ux) * 180) / Math.PI} ${p0.x + dx * 0.5} ${p0.y + dy * 0.5})`}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={SIZE * 0.016}
+              fontWeight={800}
+              letterSpacing={0.5}
+              fill="#ffffff"
+              opacity={0.75}
+              style={{ pointerEvents: "none" }}
+            >
+              SLIDE
+            </text>
+            {[0.26, 0.74].map((f, i) => {
               const cx = p0.x + dx * f;
               const cy = p0.y + dy * f;
               // Vertex leads in the direction of travel (p0 -> p1); the two
@@ -293,6 +308,11 @@ export function Board(props: { publicState: PublicGameState }) {
         const padCenter = padCenters.get(seat)!;
         const padSize = SIZE * 0.2;
         const sockets = [0, 1, 2, 3].map((i) => startSlotPoint(padCenter, i));
+        const corner = geometry.cornerForSeat(seat);
+        const outDx = padCenter.x - corner.x;
+        const outDy = padCenter.y - corner.y;
+        const outLen = Math.hypot(outDx, outDy) || 1;
+        const labelPos = { x: padCenter.x + (outDx / outLen) * padSize * 0.43, y: padCenter.y + (outDy / outLen) * padSize * 0.43 };
         return (
           <g key={seat}>
             <rect
@@ -310,6 +330,19 @@ export function Board(props: { publicState: PublicGameState }) {
             {sockets.map((p, i) => (
               <circle key={i} cx={p.x} cy={p.y} r={SIZE * 0.034} fill="#00000030" stroke={hex} strokeOpacity={0.6} strokeWidth={1.2} />
             ))}
+            <text
+              x={labelPos.x}
+              y={labelPos.y}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={SIZE * 0.019}
+              fontWeight={800}
+              letterSpacing={0.4}
+              fill={hex}
+              style={{ pointerEvents: "none" }}
+            >
+              START
+            </text>
           </g>
         );
       })}
@@ -319,6 +352,15 @@ export function Board(props: { publicState: PublicGameState }) {
         const hex = SEAT_INFO[seat].hex;
         const cells = Array.from({ length: SAFE_ZONE_LENGTH }, (_, i) => geometry.safeCellPoint(seat, i + 1));
         const home = geometry.homePoint(seat);
+        const dirX = home.x - CENTER.x;
+        const dirY = home.y - CENTER.y;
+        const dirLen = Math.hypot(dirX, dirY) || 1;
+        // Perpendicular to the lane direction, so the label sits beside the
+        // home pocket in open space instead of overlapping the thin lane.
+        const perpX = -dirY / dirLen;
+        const perpY = dirX / dirLen;
+        const homeLabelPos = { x: home.x + perpX * SIZE * 0.046, y: home.y + perpY * SIZE * 0.046 };
+        const labelAngle = (Math.atan2(dirY, dirX) * 180) / Math.PI + 90;
         return (
           <g key={seat}>
             {cells.map((p, i) => (
@@ -339,6 +381,20 @@ export function Board(props: { publicState: PublicGameState }) {
             <circle cx={home.x} cy={home.y} r={SIZE * 0.034} fill={hex} opacity={0.2} />
             <circle cx={home.x} cy={home.y} r={SIZE * 0.024} fill={hex} opacity={0.65} />
             <circle cx={home.x} cy={home.y} r={SIZE * 0.024} fill="none" stroke={hex} strokeWidth={1.4} opacity={0.9} />
+            <text
+              x={homeLabelPos.x}
+              y={homeLabelPos.y}
+              transform={`rotate(${labelAngle} ${homeLabelPos.x} ${homeLabelPos.y})`}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={SIZE * 0.0135}
+              fontWeight={800}
+              letterSpacing={0.3}
+              fill={hex}
+              style={{ pointerEvents: "none" }}
+            >
+              HOME
+            </text>
           </g>
         );
       })}
